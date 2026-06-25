@@ -1,0 +1,44 @@
+# Local agent/session metadata
+.agents/
+.codex/
+
+# Dependencies
+node_modules/
+web/node_modules/
+
+# Generated Next.js and Fumadocs output
+.next/
+.source/
+web/.next/
+web/.source/
+web/next-env.d.ts
+web/tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# Build and coverage output
+coverage/
+out/
+build/
+dist/
+web/out/
+web/build/
+web/coverage/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+
+# Package manager and debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Deployment and editor metadata
+.vercel/
+web/.vercel/
+.DS_Store
+.vscode/
+.idea/
