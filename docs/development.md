@@ -31,6 +31,31 @@ npm run lint
 npm run types:check
 ```
 
+## Runtime Configuration
+
+Copy `web/.env.example` to a local environment file and set:
+
+```bash
+READER_DATA_DIR=../data
+READER_ADMIN_PASSWORD=...
+READER_SESSION_SECRET=...
+READER_GITHUB_TOKEN=...
+READER_PULL_INTERVAL_MINUTES=15
+```
+
+`READER_GITHUB_TOKEN` is used only on the server through `GIT_ASKPASS`; the app does not put the token in Git URLs, browser state, or command arguments. Use a fine-grained GitHub PAT scoped to the repositories this reader should clone and push.
+
+Local runtime state is stored under `data/` by default:
+
+```text
+data/
+  app.db
+  auth/git-askpass.sh
+  repos/<repo-id>/worktree/
+```
+
+The first implementation uses Node 22's `node:sqlite` module. It is available in the verified Node version, but Node still marks it experimental.
+
 ## Next.js SWC Native Notes
 
 Current local environment:

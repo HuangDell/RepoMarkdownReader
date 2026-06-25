@@ -212,6 +212,17 @@ Overall, the project is feasible. The hard part is not rendering Markdown; the h
 9. Manual edit, preview, commit, and push for one repository.
 10. Basic conflict detection and error reporting.
 
+## Implemented MVP Direction
+
+The initialized Next.js/Fumadocs app is being extended as a single-admin Markdown reader:
+
+- Repository metadata, document index, FTS search, notes, jobs, and sync events live in SQLite under `READER_DATA_DIR`.
+- Repositories clone into `data/repos/<repo-id>/worktree`.
+- GitHub HTTPS URLs are supported first; private repository clone/push uses a server-side fine-grained PAT through `GIT_ASKPASS`.
+- The `/docs` route is dynamic and renders cloned Markdown with GFM, math/KaTeX, sanitized HTML, rewritten relative links/assets, and a Fumadocs page tree.
+- Admin routes under `/admin/repos` require `READER_ADMIN_PASSWORD` and `READER_SESSION_SECRET`.
+- Online edits compare the opened commit/hash before commit and push directly back to the repository default branch.
+
 ## Open Questions
 
 - Should the service only support GitHub, or should generic Git URLs be supported from the start?

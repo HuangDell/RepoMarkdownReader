@@ -1,0 +1,14 @@
+import 'server-only';
+import { NextResponse } from 'next/server';
+
+export function jsonOk<T>(data: T, init?: ResponseInit) {
+  return NextResponse.json(data, init);
+}
+
+export function jsonError(message: string, status = 400, details?: unknown) {
+  return NextResponse.json({ error: message, details }, { status });
+}
+
+export function getString(value: FormDataEntryValue | null) {
+  return typeof value === 'string' ? value : '';
+}

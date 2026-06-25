@@ -28,7 +28,14 @@ web/coverage/
 .env
 .env.*
 !.env.example
+web/.env
+web/.env.*
+!web/.env.example
 *.pem
+
+# Local reader data
+data/
+web/data/
 
 # Package manager and debug logs
 npm-debug.log*
