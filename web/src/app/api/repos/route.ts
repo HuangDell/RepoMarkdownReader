@@ -1,6 +1,6 @@
 import { requireAdmin } from '@/lib/server/auth';
 import { addRepository, listRepositories } from '@/lib/server/repositories';
-import { jsonError, jsonOk } from '@/lib/server/http';
+import { getString, jsonError, jsonOk, redirectSeeOther } from '@/lib/server/http';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,14 +15,26 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const contentType = request.headers.get('content-type') ?? '';
+  const isFormPost = contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data');
+
   try {
     await requireAdmin();
-    const body = (await request.json()) as { url?: string };
-    if (!body.url) return jsonError('Repository URL is required.');
+    const url = isFormPost ? getString((await request.formData()).get('url')) : ((await request.json()) as { url?: string }).url;
+    if (!url?.trim()) {
+      if (isFormPost) return redirectSeeOther(`/admin/repos?error=${encodeURIComponent('Repository URL is required.')}`);
+      return jsonError('Repository URL is required.');
+    }
 
-    const repository = await addRepository(body.url);
+    const repository = await addRepository(url);
+    if (isFormPost) return redirectSeeOther('/admin/repos');
     return jsonOk({ repository }, { status: 201 });
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : 'Failed to add repository.');
+    const message = error instanceof Error ? error.message : 'Failed to add repository.';
+    if (isFormPost) {
+      if (message === 'Unauthorized.') return redirectSeeOther('/login?redirectTo=/admin/repos');
+      return redirectSeeOther(`/admin/repos?error=${encodeURIComponent(message)}`);
+    }
+    return jsonError(message);
   }
 }
