@@ -8,12 +8,11 @@ import { ensureSyncScheduler } from '@/lib/server/scheduler';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export default async function RepositoriesAdminPage(props: { searchParams: Promise<{ error?: string }> }) {
+export default async function RepositoriesAdminPage() {
   if (!(await isAdminSession())) redirect('/login?redirectTo=/admin/repos');
 
   ensureSyncScheduler();
 
-  const searchParams = await props.searchParams;
   const status = getAuthConfigStatus();
-  return <RepoManager initialRepositories={listRepositories()} hasGithubToken={status.hasGithubToken} initialError={searchParams.error} />;
+  return <RepoManager initialRepositories={listRepositories()} hasGithubToken={status.hasGithubToken} />;
 }

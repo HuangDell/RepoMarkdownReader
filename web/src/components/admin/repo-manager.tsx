@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import type { FormEvent } from 'react';
 import { useMemo, useState, useTransition } from 'react';
 import { GitBranch, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import type { RepositoryRecord } from '@/lib/server/repositories';
@@ -9,13 +8,12 @@ import type { RepositoryRecord } from '@/lib/server/repositories';
 interface RepoManagerProps {
   initialRepositories: RepositoryRecord[];
   hasGithubToken: boolean;
-  initialError?: string;
 }
 
-export function RepoManager({ initialRepositories, hasGithubToken, initialError = '' }: RepoManagerProps) {
+export function RepoManager({ initialRepositories, hasGithubToken }: RepoManagerProps) {
   const [repositories, setRepositories] = useState(initialRepositories);
   const [url, setUrl] = useState('');
-  const [error, setError] = useState(initialError);
+  const [error, setError] = useState('');
   const [pendingRepoId, setPendingRepoId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -44,20 +42,12 @@ export function RepoManager({ initialRepositories, hasGithubToken, initialError 
     });
   }
 
-  function addRepository(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const nextUrl = url.trim();
-
-    if (!nextUrl) {
-      setError('Repository URL is required.');
-      return;
-    }
-
+  function addRepository() {
     run(async () => {
       const response = await fetch('/api/repos', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ url: nextUrl }),
+        body: JSON.stringify({ url }),
       });
       const data = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(data.error ?? 'Failed to add repository.');
@@ -108,26 +98,23 @@ export function RepoManager({ initialRepositories, hasGithubToken, initialError 
         </div>
       ) : null}
 
-      <form className="flex flex-col gap-3 rounded-md border p-4 md:flex-row" action="/api/repos" method="post" onSubmit={addRepository}>
+      <div className="flex flex-col gap-3 rounded-md border p-4 md:flex-row">
         <input
-          name="url"
           value={url}
           onChange={(event) => setUrl(event.target.value)}
           placeholder="https://github.com/owner/repo.git"
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
           className="min-h-10 flex-1 rounded-md border bg-transparent px-3 text-sm outline-none focus:border-fd-primary"
         />
         <button
-          type="submit"
-          disabled={isPending}
+          type="button"
+          onClick={addRepository}
+          disabled={!url.trim() || isPending}
           className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-fd-primary px-4 text-sm font-medium text-fd-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Plus className="size-4" />
           Add
         </button>
-      </form>
+      </div>
 
       {error ? <div className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300">{error}</div> : null}
 
