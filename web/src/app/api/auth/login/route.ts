@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server';
 import { setSessionCookie, verifyPassword } from '@/lib/server/auth';
-import { getString } from '@/lib/server/http';
+import { getString, localRedirectPath, redirectSeeOther } from '@/lib/server/http';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -8,13 +7,13 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   const formData = await request.formData();
   const password = getString(formData.get('password'));
-  const redirectTo = getString(formData.get('redirectTo')) || '/admin/repos';
+  const redirectTo = localRedirectPath(getString(formData.get('redirectTo')), '/admin/repos');
 
   if (!verifyPassword(password)) {
-    return NextResponse.redirect(new URL('/login?error=1', request.url), 303);
+    return redirectSeeOther('/login?error=1');
   }
 
-  const response = NextResponse.redirect(new URL(redirectTo, request.url), 303);
+  const response = redirectSeeOther(redirectTo);
   setSessionCookie(response);
   return response;
 }
