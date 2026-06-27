@@ -56,7 +56,16 @@ export async function withRepoLock<T>(repoId: string, fn: () => Promise<T>): Pro
 
 export async function runGit(args: string[], cwd?: string) {
   const askPassPath = await getAskPassPath();
-  const { stdout, stderr } = await execFileAsync('git', args, {
+  const gitArgs = [
+    '-c',
+    'credential.helper=',
+    '-c',
+    'http.extraHeader=',
+    '-c',
+    'http.https://github.com/.extraHeader=',
+    ...args,
+  ];
+  const { stdout, stderr } = await execFileAsync('git', gitArgs, {
     cwd,
     env: {
       ...process.env,
