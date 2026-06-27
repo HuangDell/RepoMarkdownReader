@@ -87,30 +87,37 @@ export async function addRepository(url: string) {
   const existing = getRepository(parsed.repoId);
   if (existing) return existing;
 
-  const timestamp = nowIso();
   const worktree = getRepoWorktreePath(parsed.repoId);
-
-  dbTransaction(() => {
-    getDb()
-      .prepare(
-        `INSERT INTO repositories (id, url, owner, name, default_branch, local_path, status, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      )
-      .run(parsed.repoId, parsed.cloneUrl, parsed.owner, parsed.name, 'main', worktree, 'cloning', timestamp, timestamp);
-  });
+  let repositoryInserted = false;
 
   try {
     await withRepoLock(parsed.repoId, async () => {
+      const lockedExisting = getRepository(parsed.repoId);
+      if (lockedExisting) return;
+
       await cloneRepository(parsed.repoId, parsed.cloneUrl);
       const defaultBranch = await getDefaultBranch(worktree);
-      getDb()
-        .prepare('UPDATE repositories SET default_branch = ?, status = ?, last_sync_at = ?, last_error = ?, updated_at = ? WHERE id = ?')
-        .run(defaultBranch, 'ready', nowIso(), null, nowIso(), parsed.repoId);
+
+      const timestamp = nowIso();
+      dbTransaction(() => {
+        getDb()
+          .prepare(
+            `INSERT INTO repositories (id, url, owner, name, default_branch, local_path, status, last_sync_at, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run(parsed.repoId, parsed.cloneUrl, parsed.owner, parsed.name, defaultBranch, worktree, 'ready', timestamp, timestamp, timestamp);
+      });
+      repositoryInserted = true;
+
       await scanRepository(parsed.repoId);
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to clone repository.';
-    setRepoStatus(parsed.repoId, 'error', message);
+    if (repositoryInserted) {
+      setRepoStatus(parsed.repoId, 'error', message);
+    } else {
+      await fs.rm(getRepoBasePath(parsed.repoId), { recursive: true, force: true });
+    }
     throw error;
   }
 
