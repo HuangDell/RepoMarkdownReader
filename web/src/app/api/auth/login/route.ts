@@ -14,6 +14,6 @@ export async function POST(request: Request) {
   }
 
   const response = redirectSeeOther(redirectTo);
-  setSessionCookie(response);
+  setSessionCookie(response, request);
   return response;
 }

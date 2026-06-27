@@ -18,6 +18,16 @@ function createSessionValue() {
   return `${payload}.${sign(payload)}`;
 }
 
+function isSecureRequest(request: Request) {
+  if (new URL(request.url).protocol === 'https:') return true;
+
+  const forwardedProto = request.headers.get('x-forwarded-proto');
+  if (forwardedProto?.split(',').some((proto) => proto.trim().toLowerCase() === 'https')) return true;
+
+  const forwarded = request.headers.get('forwarded');
+  return forwarded?.toLowerCase().split(';').some((part) => part.trim() === 'proto=https') ?? false;
+}
+
 export async function isAdminSession() {
   if (!appConfig.adminPassword || appConfig.sessionSecret.length < 32) return false;
 
@@ -42,11 +52,11 @@ export async function requireAdmin() {
   }
 }
 
-export function setSessionCookie(response: NextResponse) {
+export function setSessionCookie(response: NextResponse, request: Request) {
   response.cookies.set(cookieName, createSessionValue(), {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecureRequest(request),
     path: '/',
     maxAge: maxAgeSeconds,
   });
