@@ -1,45 +1,41 @@
-# web
+# Markdown Reader Web App
 
-This is a Next.js application generated with
-[Create Fumadocs](https://github.com/fuma-nama/fumadocs).
+这里是项目的 Next.js + Fumadocs Web 应用目录。完整项目说明、本地部署步骤、运行配置和技术基础见根目录 [README.md](../README.md)。
 
-Run development server:
+## 常用命令
 
 ```bash
+npm install
 npm run dev
-# or
-pnpm dev
-# or
-yarn dev
+npm run lint
+npm run types:check
+npm run build
+npm run start -- -H 0.0.0.0 -p 3000
 ```
 
-Open http://localhost:3000 with your browser to see the result.
+## 运行配置
 
-## Explore
+复制并编辑环境变量：
 
-In the project, you can see:
+```bash
+cp .env.example .env
+```
 
-- `lib/source.ts`: Code for content source adapter, [`loader()`](https://fumadocs.dev/docs/headless/source-api) provides the interface to access your content.
-- `lib/layout.shared.tsx`: Shared options for layouts, optional but preferred to keep.
+关键变量：
 
-| Route                     | Description                                            |
-| ------------------------- | ------------------------------------------------------ |
-| `app/(home)`              | The route group for your landing page and other pages. |
-| `app/docs`                | The documentation layout and pages.                    |
-| `app/api/search/route.ts` | The Route Handler for search.                          |
+- `READER_DATA_DIR`
+- `READER_ADMIN_PASSWORD`
+- `READER_SESSION_SECRET`
+- `READER_GITHUB_TOKEN`
+- `READER_PULL_INTERVAL_MINUTES`
 
-### Fumadocs MDX
+不要提交 `.env` 或任何 GitHub token。
 
-A `source.config.ts` config file has been included, you can customise different options like frontmatter schema.
+## 主要入口
 
-Read the [Introduction](https://fumadocs.dev/docs/mdx) for further details.
-
-## Learn More
-
-To learn more about Next.js and Fumadocs, take a look at the following
-resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js
-  features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [Fumadocs](https://fumadocs.dev) - learn about Fumadocs
+- `/docs`: Markdown 阅读器。
+- `/admin/repos`: 仓库管理和同步。
+- `/login`: 管理员登录。
+- `/api/repos`: 仓库管理 API。
+- `/api/notes`: 本地笔记 API。
+- `/api/search`: SQLite FTS 搜索 API。
