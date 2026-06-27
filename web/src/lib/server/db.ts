@@ -8,6 +8,14 @@ let db: DatabaseSync | undefined;
 
 export type SqlValue = string | number | bigint | null | Uint8Array;
 
+export function plainObject<T extends object>(row: T): T {
+  return { ...row };
+}
+
+export function plainObjects<T extends object>(rows: T[]): T[] {
+  return rows.map(plainObject);
+}
+
 export function getDb() {
   if (db) return db;
 

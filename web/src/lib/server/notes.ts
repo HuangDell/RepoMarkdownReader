@@ -1,6 +1,6 @@
 import 'server-only';
 import crypto from 'node:crypto';
-import { getDb } from './db';
+import { getDb, plainObject, plainObjects } from './db';
 import { normalizeRepoPath } from './paths';
 import { nowIso } from './time';
 
@@ -18,13 +18,15 @@ export interface NoteRecord {
 }
 
 export function listNotes(repoId: string, documentPath: string, branch: string) {
-  return getDb()
-    .prepare(
-      `SELECT * FROM notes
-       WHERE repo_id = ? AND document_path = ? AND branch = ?
-       ORDER BY created_at DESC`,
-    )
-    .all(repoId, normalizeRepoPath(documentPath), branch) as unknown as NoteRecord[];
+  return plainObjects(
+    getDb()
+      .prepare(
+        `SELECT * FROM notes
+         WHERE repo_id = ? AND document_path = ? AND branch = ?
+         ORDER BY created_at DESC`,
+      )
+      .all(repoId, normalizeRepoPath(documentPath), branch) as unknown as NoteRecord[],
+  );
 }
 
 export function createNote(input: {
@@ -74,7 +76,8 @@ export function createNote(input: {
 export function updateNote(id: string, body: string) {
   const timestamp = nowIso();
   getDb().prepare('UPDATE notes SET body = ?, updated_at = ? WHERE id = ?').run(body.trim(), timestamp, id);
-  return getDb().prepare('SELECT * FROM notes WHERE id = ?').get(id) as NoteRecord | undefined;
+  const row = getDb().prepare('SELECT * FROM notes WHERE id = ?').get(id) as NoteRecord | undefined;
+  return row ? plainObject(row) : undefined;
 }
 
 export function deleteNote(id: string) {

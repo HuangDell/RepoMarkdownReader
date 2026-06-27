@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type * as PageTree from 'fumadocs-core/page-tree';
-import { getDb, dbTransaction } from './db';
+import { getDb, dbTransaction, plainObject, plainObjects } from './db';
 import { cloneRepository, getDefaultBranch, getHeadCommit, pullRepository, withRepoLock } from './git';
 import { parseGitHubUrl } from './github-url';
 import { extractMarkdownMetadata } from './markdown';
@@ -38,33 +38,42 @@ export interface DocumentRecord {
 }
 
 export function listRepositories() {
-  return getDb()
-    .prepare('SELECT * FROM repositories ORDER BY owner COLLATE NOCASE, name COLLATE NOCASE')
-    .all() as unknown as RepositoryRecord[];
+  return plainObjects(
+    getDb()
+      .prepare('SELECT * FROM repositories ORDER BY owner COLLATE NOCASE, name COLLATE NOCASE')
+      .all() as unknown as RepositoryRecord[],
+  );
 }
 
 export function getRepository(repoId: string) {
-  return getDb().prepare('SELECT * FROM repositories WHERE id = ?').get(repoId) as RepositoryRecord | undefined;
+  const row = getDb().prepare('SELECT * FROM repositories WHERE id = ?').get(repoId) as RepositoryRecord | undefined;
+  return row ? plainObject(row) : undefined;
 }
 
 export function getDocument(repoId: string, repoPath: string) {
-  return getDb().prepare('SELECT * FROM documents WHERE repo_id = ? AND path = ?').get(repoId, normalizeRepoPath(repoPath)) as
+  const row = getDb().prepare('SELECT * FROM documents WHERE repo_id = ? AND path = ?').get(repoId, normalizeRepoPath(repoPath)) as
     | DocumentRecord
     | undefined;
+  return row ? plainObject(row) : undefined;
 }
 
 export function getFirstDocument(repoId: string) {
-  return getDb().prepare('SELECT * FROM documents WHERE repo_id = ? ORDER BY path LIMIT 1').get(repoId) as DocumentRecord | undefined;
+  const row = getDb().prepare('SELECT * FROM documents WHERE repo_id = ? ORDER BY path LIMIT 1').get(repoId) as DocumentRecord | undefined;
+  return row ? plainObject(row) : undefined;
 }
 
 export function listDocuments(repoId?: string) {
   if (repoId) {
-    return getDb()
-      .prepare('SELECT * FROM documents WHERE repo_id = ? ORDER BY path COLLATE NOCASE')
-      .all(repoId) as unknown as DocumentRecord[];
+    return plainObjects(
+      getDb()
+        .prepare('SELECT * FROM documents WHERE repo_id = ? ORDER BY path COLLATE NOCASE')
+        .all(repoId) as unknown as DocumentRecord[],
+    );
   }
 
-  return getDb().prepare('SELECT * FROM documents ORDER BY repo_id, path COLLATE NOCASE').all() as unknown as DocumentRecord[];
+  return plainObjects(
+    getDb().prepare('SELECT * FROM documents ORDER BY repo_id, path COLLATE NOCASE').all() as unknown as DocumentRecord[],
+  );
 }
 
 function setRepoStatus(repoId: string, status: string, lastError?: string | null) {
@@ -312,24 +321,28 @@ export function searchDocuments(query: string, repoId?: string) {
   if (!match) return [];
 
   if (repoId) {
-    return getDb()
+    return plainObjects(
+      getDb()
+        .prepare(
+          `SELECT repo_id, path, title, snippet(document_fts, 3, '<mark>', '</mark>', '...', 18) AS snippet
+           FROM document_fts
+           WHERE document_fts MATCH ? AND repo_id = ?
+           LIMIT 30`,
+        )
+        .all(match, repoId) as Array<{ repo_id: string; path: string; title: string; snippet: string }>,
+    );
+  }
+
+  return plainObjects(
+    getDb()
       .prepare(
         `SELECT repo_id, path, title, snippet(document_fts, 3, '<mark>', '</mark>', '...', 18) AS snippet
          FROM document_fts
-         WHERE document_fts MATCH ? AND repo_id = ?
+         WHERE document_fts MATCH ?
          LIMIT 30`,
       )
-      .all(match, repoId) as Array<{ repo_id: string; path: string; title: string; snippet: string }>;
-  }
-
-  return getDb()
-    .prepare(
-      `SELECT repo_id, path, title, snippet(document_fts, 3, '<mark>', '</mark>', '...', 18) AS snippet
-       FROM document_fts
-       WHERE document_fts MATCH ?
-       LIMIT 30`,
-    )
-    .all(match) as Array<{ repo_id: string; path: string; title: string; snippet: string }>;
+      .all(match) as Array<{ repo_id: string; path: string; title: string; snippet: string }>,
+  );
 }
 
 export async function readDocumentFile(repoId: string, repoPath: string) {
