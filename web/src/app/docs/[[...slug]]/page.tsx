@@ -7,7 +7,6 @@ import {
 } from 'fumadocs-ui/layouts/docs/page';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { AnchorNavigation } from '@/components/reader/anchor-navigation';
 import { CommentSection } from '@/components/reader/comment-section';
 import { SearchPanel } from '@/components/reader/search-panel';
 import { renderMarkdown } from '@/lib/server/markdown';
@@ -103,7 +102,6 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
 
   return (
     <DocsPage toc={rendered.toc}>
-      <AnchorNavigation />
       <DocsTitle>{rendered.title}</DocsTitle>
       <DocsDescription className="mb-0">{rendered.description || `${repo.owner}/${repo.name} · ${repoPath}`}</DocsDescription>
       <div className="not-prose flex flex-wrap gap-2 border-b pb-6 text-sm">

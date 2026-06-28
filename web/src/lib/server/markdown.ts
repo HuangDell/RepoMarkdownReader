@@ -150,6 +150,7 @@ function rehypeRewriteLinks(repoId: string, currentPath: string) {
 
 const sanitizeSchema: Schema = {
   ...defaultSchema,
+  clobberPrefix: '',
   tagNames: [
     ...(defaultSchema.tagNames ?? []),
     'math',
