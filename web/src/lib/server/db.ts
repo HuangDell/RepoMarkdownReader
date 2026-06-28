@@ -5,6 +5,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { appConfig } from './config';
 
 let db: DatabaseSync | undefined;
+const latestSchemaVersion = 1;
 
 export type SqlValue = string | number | bigint | null | Uint8Array;
 
@@ -73,14 +74,11 @@ function migrate(database: DatabaseSync) {
       body
     );
 
-    CREATE TABLE IF NOT EXISTS notes (
+    CREATE TABLE IF NOT EXISTS comments (
       id TEXT PRIMARY KEY,
       repo_id TEXT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
       branch TEXT NOT NULL,
       document_path TEXT NOT NULL,
-      heading_anchor TEXT,
-      selected_text TEXT,
-      selected_hash TEXT,
       body TEXT NOT NULL,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
@@ -106,8 +104,19 @@ function migrate(database: DatabaseSync) {
 
     CREATE INDEX IF NOT EXISTS idx_documents_repo_path ON documents(repo_id, path);
     CREATE INDEX IF NOT EXISTS idx_headings_repo_doc ON document_headings(repo_id, document_path);
-    CREATE INDEX IF NOT EXISTS idx_notes_target ON notes(repo_id, branch, document_path);
+    CREATE INDEX IF NOT EXISTS idx_comments_target ON comments(repo_id, branch, document_path);
   `);
+
+  const row = database.prepare('PRAGMA user_version').get() as { user_version: number } | undefined;
+  const version = row?.user_version ?? 0;
+
+  if (version < 1) {
+    database.exec(`
+      DROP INDEX IF EXISTS idx_notes_target;
+      DROP TABLE IF EXISTS notes;
+      PRAGMA user_version = ${latestSchemaVersion};
+    `);
+  }
 }
 
 export function dbTransaction<T>(fn: () => T) {

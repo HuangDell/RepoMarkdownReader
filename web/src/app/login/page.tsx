@@ -12,7 +12,7 @@ export default async function LoginPage(props: { searchParams: Promise<{ error?:
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4">
       <div className="rounded-md border p-6">
         <h1 className="text-xl font-semibold">Admin login</h1>
-        <p className="mt-2 text-sm text-fd-muted-foreground">Repository management, notes, and writeback require an admin session.</p>
+        <p className="mt-2 text-sm text-fd-muted-foreground">Repository management, comments, and writeback require an admin session.</p>
         {!canLogin ? (
           <div className="mt-4 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm">
             Set <code>READER_ADMIN_PASSWORD</code> and a 32+ character <code>READER_SESSION_SECRET</code>.

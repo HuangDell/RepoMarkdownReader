@@ -6,7 +6,7 @@ Last updated: 2026-06-24
 
 This project is intended to be a self-hosted web service for reading and managing Markdown documents stored in GitHub repositories. The first deployment target is a Raspberry Pi, so the system should stay lightweight, easy to operate, and friendly to ARM/Linux deployment.
 
-The product should feel closer to a personal blog or knowledge base than a raw Git repository browser: documents should be easy to browse, search, read on desktop/mobile, annotate, and eventually edit back into Git.
+The product should feel closer to a personal blog or knowledge base than a raw Git repository browser: documents should be easy to browse, search, read on desktop/mobile, discuss through local comments, and eventually edit back into Git.
 
 ## Current Requirements
 
@@ -18,7 +18,7 @@ The product should feel closer to a personal blog or knowledge base than a raw G
   - Left repository/document navigation sidebar.
   - Center Markdown article content.
   - Right in-page table of contents.
-  - Floating assistant/note/action entry points when useful.
+  - In-page table of contents and document-level actions when useful.
 - Mobile layout should collapse navigation and table of contents into drawers or sheets.
 - The reading surface should prioritize long-form technical content, code blocks, formulas, headings, and internal links.
 
@@ -55,25 +55,25 @@ Potential authentication approaches:
 - Personal deployment MVP: store a fine-grained GitHub personal access token or SSH key on the Raspberry Pi, scoped to selected repositories.
 - More robust later version: integrate GitHub OAuth or GitHub App authentication, so access can be granted per user or per installation.
 
-### Hand Notes / Draft Notes
+### Document Comments
 
-- Support temporary notes that do not modify original Markdown files.
-- Notes should be displayed like side comments next to the document.
-- Notes should be saved locally, not committed by default.
-- Notes should be associated with at least repository, branch/ref, document path, and optional line/heading/anchor information.
-- Future option: promote selected notes into Markdown edits and commit them.
+- Support local comments that do not modify original Markdown files.
+- Comments should be displayed at the bottom of the document.
+- Comments should be saved locally and never committed by default.
+- The first implementation can require the single admin session to read, create, edit, and delete comments.
+- Comments should be associated with repository, branch/ref, and document path.
 
 ### Raspberry Pi Deployment
 
 - Prefer a single deployable service with minimal dependencies.
 - Docker Compose should be supported if the runtime stack allows it.
-- Local persistent storage is required for cloned repositories, metadata, notes, credentials, and logs.
+- Local persistent storage is required for cloned repositories, metadata, comments, credentials, and logs.
 - SQLite is likely sufficient for the first version.
 - Avoid mandatory heavyweight services unless a later requirement justifies them.
 
 ## Open Source Project Survey
 
-No surveyed project appears to match the full requirement set directly, especially the combination of multi-repository GitHub ingestion, blog-like Markdown rendering, online Git writeback, and side-note drafts. Several projects are useful references or partial building blocks.
+No surveyed project appears to match the full requirement set directly, especially the combination of multi-repository GitHub ingestion, blog-like Markdown rendering, online Git writeback, and local comments. Several projects are useful references or partial building blocks.
 
 ### Gollum
 
@@ -89,7 +89,7 @@ No surveyed project appears to match the full requirement set directly, especial
 - Fit:
   - Strong reference for "Git repository as editable wiki".
   - Useful if the product can be wiki-shaped.
-  - Less suitable as a direct base if we need arbitrary multi-repository blog/document browsing, custom side-note drafts, and repository management UX.
+  - Less suitable as a direct base if we need arbitrary multi-repository blog/document browsing, local comments, and repository management UX.
 
 ### Wiki.js
 
@@ -121,7 +121,7 @@ No surveyed project appears to match the full requirement set directly, especial
 - Fit:
   - Strong option if the main goal becomes self-hosted Git management.
   - It already solves many Git, repository, credential, mirror, and web editing problems.
-  - It is not blog/document-reader-first, and side-note drafts would require customization or a companion app.
+  - It is not blog/document-reader-first, and local comments would require customization or a companion app.
 
 ### MkDocs / Material For MkDocs
 
@@ -133,7 +133,7 @@ No surveyed project appears to match the full requirement set directly, especial
   - Material for MkDocs supports strong documentation UX and math rendering.
 - Fit:
   - Good reference for Markdown rendering, navigation, search, and responsive reading UX.
-  - Not a direct fit for online editing, multi-repository management, periodic Git pulls, or draft notes unless wrapped by a custom service.
+  - Not a direct fit for online editing, multi-repository management, periodic Git pulls, or local comments unless wrapped by a custom service.
 
 ### Docusaurus
 
@@ -146,7 +146,7 @@ No surveyed project appears to match the full requirement set directly, especial
   - Good responsive reading experience.
 - Fit:
   - Useful reference for blog/document UI and Markdown pipeline.
-  - Not enough by itself because Git clone/pull, editing, pushing, and side-note drafts need custom backend work.
+  - Not enough by itself because Git clone/pull, editing, pushing, and local comments need custom backend work.
 
 ### docsify
 
@@ -158,7 +158,7 @@ No surveyed project appears to match the full requirement set directly, especial
   - Very lightweight compared with full static build systems.
 - Fit:
   - Useful reference for lightweight Markdown browsing.
-  - Not enough for repository management, authenticated editing, Git writeback, or local side-note persistence.
+  - Not enough for repository management, authenticated editing, Git writeback, or comment persistence.
 
 ## Initial Product Direction
 
@@ -167,7 +167,7 @@ The most realistic direction is to build a small custom service and reuse proven
 - Git operations: use the system `git` binary or a mature library, with explicit locking per repository.
 - Markdown rendering: use a mature Markdown pipeline such as `remark`/`rehype` with `remark-gfm`, `remark-math`, and `rehype-katex`, or `markdown-it` with equivalent plugins.
 - Editor: use CodeMirror or Monaco with Markdown preview.
-- Storage: use SQLite for repository registry, document metadata, notes, sync status, and credentials metadata.
+- Storage: use SQLite for repository registry, document metadata, comments, sync status, and credentials metadata.
 - Deployment: package as a Docker image or simple Node/Python service runnable on Raspberry Pi.
 
 This keeps the product aligned with the desired workflow instead of forcing the requirements into a wiki or Git forge.
@@ -194,10 +194,10 @@ Difficulty estimate:
 - Static reader only: low to medium.
 - Multi-repository clone/pull plus Markdown rendering: medium.
 - Online edit, commit, push, credentials, and conflict handling: medium to high.
-- Side-note drafts aligned with document anchors/lines across file changes: medium to high.
+- Admin-only local document comments: low to medium.
 - A polished labuladong-like desktop/mobile UI: medium, mostly frontend detail work.
 
-Overall, the project is feasible. The hard part is not rendering Markdown; the hard part is making Git writeback, repository sync, authentication, conflicts, and notes reliable.
+Overall, the project is feasible. The hard part is not rendering Markdown; the hard part is making Git writeback, repository sync, authentication, conflicts, and comments reliable.
 
 ## Suggested MVP Scope
 
@@ -208,7 +208,7 @@ Overall, the project is feasible. The hard part is not rendering Markdown; the h
 5. Browse Markdown files by repository and path.
 6. Render Markdown, formulas, code blocks, images, and relative links.
 7. Responsive desktop/mobile document viewer.
-8. Local side notes attached to documents.
+8. Local admin comments attached to documents.
 9. Manual edit, preview, commit, and push for one repository.
 10. Basic conflict detection and error reporting.
 
@@ -216,7 +216,7 @@ Overall, the project is feasible. The hard part is not rendering Markdown; the h
 
 The initialized Next.js/Fumadocs app is being extended as a single-admin Markdown reader:
 
-- Repository metadata, document index, FTS search, notes, jobs, and sync events live in SQLite under `READER_DATA_DIR`.
+- Repository metadata, document index, FTS search, comments, jobs, and sync events live in SQLite under `READER_DATA_DIR`.
 - Repositories clone into `data/repos/<repo-id>/worktree`.
 - GitHub HTTPS URLs are supported first; private repository clone/push uses a server-side fine-grained PAT through `GIT_ASKPASS`.
 - The `/docs` route is dynamic and renders cloned Markdown with GFM, math/KaTeX, sanitized HTML, rewritten relative links/assets, and a Fumadocs page tree.
@@ -226,7 +226,7 @@ The initialized Next.js/Fumadocs app is being extended as a single-admin Markdow
 ## Open Questions
 
 - Should the service only support GitHub, or should generic Git URLs be supported from the start?
-- Should notes attach to line numbers, headings, selected text ranges, or all three?
+- Should comments ever support public read/write access, or remain admin-only?
 - Is the first version single-user only, or should multiple user accounts be planned immediately?
 - Should online editing push directly to the default branch, or create a branch/PR workflow?
 - Are private repositories required in the first version?
@@ -251,7 +251,7 @@ The initialized Next.js/Fumadocs app is being extended as a single-admin Markdow
 - Git worker for clone, pull, status, commit, push.
 - Markdown file scanner and metadata indexer.
 - Render API for Markdown to sanitized HTML.
-- Notes API backed by SQLite.
+- Comments API backed by SQLite.
 - Auth middleware for admin-only operations.
 
 ### Frontend
@@ -259,8 +259,7 @@ The initialized Next.js/Fumadocs app is being extended as a single-admin Markdow
 - Repository selector.
 - Document tree / navigation sidebar.
 - Markdown reader with responsive layout.
-- Side-note panel on desktop.
-- Notes drawer or bottom sheet on mobile.
+- Bottom document comments section.
 - Markdown editor with live preview.
 - Sync and commit status indicators.
 

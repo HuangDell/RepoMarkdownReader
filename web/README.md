@@ -37,5 +37,5 @@ cp .env.example .env
 - `/admin/repos`: 仓库管理和同步。
 - `/login`: 管理员登录。
 - `/api/repos`: 仓库管理 API。
-- `/api/notes`: 本地笔记 API。
+- `/api/comments`: 本地评论 API。
 - `/api/search`: SQLite FTS 搜索 API。

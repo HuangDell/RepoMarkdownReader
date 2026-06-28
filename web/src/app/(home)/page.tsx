@@ -6,7 +6,7 @@ export default function HomePage() {
       <div>
         <h1 className="text-3xl font-semibold">Markdown Reader</h1>
         <p className="mt-3 max-w-2xl text-fd-muted-foreground">
-          Self-hosted GitHub Markdown reader with repository sync, formulas, search, notes, and direct Git writeback.
+          Self-hosted GitHub Markdown reader with repository sync, formulas, search, comments, and direct Git writeback.
         </p>
       </div>
       <div className="flex flex-wrap gap-3">

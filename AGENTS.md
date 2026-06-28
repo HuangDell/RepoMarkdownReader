@@ -24,7 +24,7 @@ Current feature goals:
 - Delete repositories from the service.
 - Periodically pull configured repositories.
 - Support online edits with commit and push, likely requiring GitHub authentication.
-- Support handwritten side notes or drafts that do not modify source files until explicitly committed.
+- Support local page-bottom comments that do not modify source files.
 - Keep the UI dense, readable, and document-first, closer to a technical docs reader than a marketing site.
 
 ## Current Stack

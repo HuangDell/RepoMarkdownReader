@@ -7,7 +7,8 @@ import {
 } from 'fumadocs-ui/layouts/docs/page';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { NotePanel } from '@/components/reader/note-panel';
+import { AnchorNavigation } from '@/components/reader/anchor-navigation';
+import { CommentSection } from '@/components/reader/comment-section';
 import { SearchPanel } from '@/components/reader/search-panel';
 import { renderMarkdown } from '@/lib/server/markdown';
 import { hrefForDoc, relativePathFromSlug } from '@/lib/server/paths';
@@ -102,6 +103,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
 
   return (
     <DocsPage toc={rendered.toc}>
+      <AnchorNavigation />
       <DocsTitle>{rendered.title}</DocsTitle>
       <DocsDescription className="mb-0">{rendered.description || `${repo.owner}/${repo.name} · ${repoPath}`}</DocsDescription>
       <div className="not-prose flex flex-wrap gap-2 border-b pb-6 text-sm">
@@ -117,12 +119,10 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
           GitHub
         </a>
       </div>
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <DocsBody>
-          <div dangerouslySetInnerHTML={{ __html: rendered.html }} />
-        </DocsBody>
-        <NotePanel repoId={repoId} branch={repo.default_branch} path={repoPath} />
-      </div>
+      <DocsBody>
+        <div dangerouslySetInnerHTML={{ __html: rendered.html }} />
+        <CommentSection repoId={repoId} branch={repo.default_branch} path={repoPath} />
+      </DocsBody>
     </DocsPage>
   );
 }
