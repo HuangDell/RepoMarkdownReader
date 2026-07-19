@@ -49,7 +49,7 @@ Browser binaries are stored in Playwright's local cache and are not committed to
 
 ## Markdown Rendering Compatibility
 
-Math rendering accepts standard `$...$` and `$$...$$` delimiters, plus ChatGPT-style `\(...\)` and `\[...\]` delimiters. A standalone `[` / `]` block is also treated as display math when its body contains TeX-like operators. Delimiter normalization skips code blocks, inline code, links, images, raw HTML, and formulas that already use standard delimiters.
+Math rendering accepts standard `$...$` and `$$...$$` delimiters, plus ChatGPT-style `\(...\)` and `\[...\]` delimiters. A standalone `[` / `]` block is also treated as display math when its body contains TeX-like operators. Inside these compatibility blocks, a line made of three or more equals signs is normalized to one `=`. Delimiter normalization skips code blocks, inline code, links, images, raw HTML, and formulas that already use standard delimiters.
 
 Wide display formulas, long inline formulas, Markdown tables, and fenced code blocks scroll inside their own content area instead of widening the page.
 

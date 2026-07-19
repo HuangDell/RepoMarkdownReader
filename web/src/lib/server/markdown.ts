@@ -149,7 +149,10 @@ function normalizeChatGptMathDelimiters(markdown: string) {
     }
   };
 
-  const displayMath = (body: string) => `$$\n${body}\n$$`;
+  const displayMath = (body: string) => {
+    const normalizedBody = body.replace(/^[ \t]*={3,}[ \t]*$/gm, '=');
+    return `$$\n${normalizedBody}\n$$`;
+  };
   addMatches(/^[ \t]{0,3}\\\[[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]{0,3}\\\][ \t]*$/gm, displayMath);
   addMatches(/^[ \t]{0,3}\\\[([^\r\n]+?)\\\][ \t]*$/gm, displayMath);
   addMatches(
