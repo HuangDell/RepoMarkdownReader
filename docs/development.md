@@ -1,6 +1,6 @@
 # Development Setup
 
-Last updated: 2026-06-25
+Last updated: 2026-07-19
 
 ## Project Layout
 
@@ -30,6 +30,22 @@ npm run build
 npm run lint
 npm run types:check
 ```
+
+## Browser Layout Verification
+
+Playwright is kept as a development dependency for manual Chromium and WebKit checks. Install the browser binaries once from `web/`:
+
+```bash
+npx playwright install chromium webkit
+```
+
+If Playwright reports missing Linux libraries, install them with:
+
+```bash
+npx playwright install-deps chromium webkit
+```
+
+Browser binaries are stored in Playwright's local cache and are not committed to git. For mobile reader checks, use a 390 × 844 viewport and verify that wide Markdown tables scroll horizontally inside their own container without widening the page.
 
 ## Runtime Configuration
 

@@ -42,6 +42,8 @@ type TreeNode = {
   children?: TreeNode[];
 };
 
+const tableScrollContainerClasses = ['relative', 'overflow-auto', 'prose-no-margin', 'my-6'];
+
 function textContent(node: TreeNode): string {
   if (typeof node.value === 'string') return node.value;
   return (node.children ?? []).map(textContent).join('');
@@ -148,6 +150,43 @@ function rehypeRewriteLinks(repoId: string, currentPath: string) {
   };
 }
 
+function hasClassName(node: TreeNode, className: string) {
+  const value = node.properties?.className;
+  if (Array.isArray(value)) return value.includes(className);
+  return typeof value === 'string' && value.split(/\s+/).includes(className);
+}
+
+function isTableScrollContainer(node: TreeNode) {
+  return node.tagName === 'div' && tableScrollContainerClasses.every((className) => hasClassName(node, className));
+}
+
+function rehypeWrapTables() {
+  return (tree: TreeNode) => {
+    const wrapTables = (node: TreeNode) => {
+      if (!node.children) return;
+
+      const parentIsScrollContainer = isTableScrollContainer(node);
+      node.children = node.children.map((child) => {
+        if (child.type === 'element' && child.tagName === 'table') {
+          if (parentIsScrollContainer) return child;
+
+          return {
+            type: 'element',
+            tagName: 'div',
+            properties: { className: [...tableScrollContainerClasses] },
+            children: [child],
+          };
+        }
+
+        wrapTables(child);
+        return child;
+      });
+    };
+
+    wrapTables(tree);
+  };
+}
+
 const sanitizeSchema: Schema = {
   ...defaultSchema,
   clobberPrefix: '',
@@ -205,6 +244,7 @@ export async function renderMarkdown(repoId: string, repoPath: string, raw: stri
     .use(rehypeHeadingIds(metadata.headings))
     .use(rehypeRewriteLinks(repoId, repoPath))
     .use(rehypeKatex)
+    .use(rehypeWrapTables)
     .use(rehypeSanitize, sanitizeSchema)
     .use(rehypeStringify)
     .process(parsed.content);
