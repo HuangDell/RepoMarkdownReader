@@ -15,3 +15,50 @@ html > body[data-scroll-locked] {
 .prose :where(h1, h2, h3, h4, h5, h6)[id] {
   scroll-margin-top: 6rem;
 }
+
+.prose .reader-math-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 0.25rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.prose .reader-math-scroll > .katex {
+  width: max-content;
+  min-width: 100%;
+}
+
+.prose .reader-inline-math {
+  display: inline-block;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  vertical-align: middle;
+  -webkit-overflow-scrolling: touch;
+}
+
+.prose pre.reader-code-block {
+  max-width: 100%;
+  margin-block: 1.5rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid var(--color-fd-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-fd-card);
+  padding: 1rem;
+  font-size: 0.875em;
+  line-height: 1.7;
+  -webkit-overflow-scrolling: touch;
+}
+
+.prose pre.reader-code-block > code {
+  display: block;
+  min-width: max-content;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+}

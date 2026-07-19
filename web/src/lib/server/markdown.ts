@@ -40,9 +40,28 @@ type TreeNode = {
   depth?: number;
   properties?: Record<string, unknown>;
   children?: TreeNode[];
+  position?: {
+    start: { line: number; column: number; offset?: number };
+    end: { line: number; column: number; offset?: number };
+  };
 };
 
 const tableScrollContainerClasses = ['relative', 'overflow-auto', 'prose-no-margin', 'my-6'];
+const protectedMathDelimiterNodeTypes = new Set([
+  'code',
+  'inlineCode',
+  'html',
+  'definition',
+  'link',
+  'linkReference',
+  'image',
+  'imageReference',
+  'math',
+  'inlineMath',
+]);
+
+type SourceRange = { start: number; end: number };
+type SourceReplacement = SourceRange & { value: string };
 
 function textContent(node: TreeNode): string {
   if (typeof node.value === 'string') return node.value;
@@ -86,6 +105,63 @@ function collectMarkdownHeadings(markdown: string) {
   });
 
   return headings;
+}
+
+function collectProtectedMathDelimiterRanges(markdown: string) {
+  const tree = unified().use(remarkParse).use(remarkMath).parse(markdown) as TreeNode;
+  const ranges: SourceRange[] = [];
+
+  const collect = (node: TreeNode) => {
+    const start = node.position?.start.offset;
+    const end = node.position?.end.offset;
+    if (protectedMathDelimiterNodeTypes.has(node.type) && typeof start === 'number' && typeof end === 'number') {
+      ranges.push({ start, end });
+      return;
+    }
+
+    node.children?.forEach(collect);
+  };
+
+  collect(tree);
+  return ranges;
+}
+
+function normalizeChatGptMathDelimiters(markdown: string) {
+  const protectedRanges = collectProtectedMathDelimiterRanges(markdown);
+  const replacements: SourceReplacement[] = [];
+
+  const overlaps = (start: number, end: number, ranges: SourceRange[]) =>
+    ranges.some((range) => start < range.end && end > range.start);
+
+  const addMatches = (
+    pattern: RegExp,
+    format: (body: string) => string,
+    accept: (body: string) => boolean = () => true,
+  ) => {
+    for (const match of markdown.matchAll(pattern)) {
+      if (match.index === undefined) continue;
+
+      const start = match.index;
+      const end = start + match[0].length;
+      const body = match[1]?.trim() ?? '';
+      if (!body || !accept(body) || overlaps(start, end, protectedRanges) || overlaps(start, end, replacements)) continue;
+      replacements.push({ start, end, value: format(body) });
+    }
+  };
+
+  const displayMath = (body: string) => `$$\n${body}\n$$`;
+  addMatches(/^[ \t]{0,3}\\\[[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]{0,3}\\\][ \t]*$/gm, displayMath);
+  addMatches(/^[ \t]{0,3}\\\[([^\r\n]+?)\\\][ \t]*$/gm, displayMath);
+  addMatches(
+    /^[ \t]{0,3}\[[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]{0,3}\][ \t]*$/gm,
+    displayMath,
+    (body) => /\\[A-Za-z]+|[_^={}]/.test(body),
+  );
+  addMatches(/\\\(([^\r\n]+?)\\\)/g, (body) => `$${body}$`, (body) => !body.includes('$'));
+
+  return replacements
+    .sort((left, right) => right.start - left.start)
+    .reduce((result, replacement) => `${result.slice(0, replacement.start)}${replacement.value}${result.slice(replacement.end)}`, markdown);
 }
 
 export function extractMarkdownMetadata(repoPath: string, raw: string): MarkdownMetadata {
@@ -156,14 +232,31 @@ function hasClassName(node: TreeNode, className: string) {
   return typeof value === 'string' && value.split(/\s+/).includes(className);
 }
 
+function addClassName(node: TreeNode, className: string) {
+  if (hasClassName(node, className)) return;
+
+  const value = node.properties?.className;
+  const classNames = Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : typeof value === 'string'
+      ? value.split(/\s+/).filter(Boolean)
+      : [];
+  node.properties = { ...node.properties, className: [...classNames, className] };
+}
+
 function isTableScrollContainer(node: TreeNode) {
   return node.tagName === 'div' && tableScrollContainerClasses.every((className) => hasClassName(node, className));
 }
 
-function rehypeWrapTables() {
+function rehypeEnhanceOverflowContent() {
   return (tree: TreeNode) => {
-    const wrapTables = (node: TreeNode) => {
+    const enhance = (node: TreeNode, insideDisplayMath = false) => {
       if (!node.children) return;
+
+      const isDisplayMath = node.tagName === 'span' && hasClassName(node, 'katex-display');
+      if (node.tagName === 'pre') addClassName(node, 'reader-code-block');
+      if (isDisplayMath) addClassName(node, 'reader-math-scroll');
+      if (node.tagName === 'span' && hasClassName(node, 'katex') && !insideDisplayMath) addClassName(node, 'reader-inline-math');
 
       const parentIsScrollContainer = isTableScrollContainer(node);
       node.children = node.children.map((child) => {
@@ -178,12 +271,12 @@ function rehypeWrapTables() {
           };
         }
 
-        wrapTables(child);
+        enhance(child, insideDisplayMath || isDisplayMath);
         return child;
       });
     };
 
-    wrapTables(tree);
+    enhance(tree);
   };
 }
 
@@ -236,6 +329,7 @@ const sanitizeSchema: Schema = {
 export async function renderMarkdown(repoId: string, repoPath: string, raw: string): Promise<RenderedMarkdown> {
   const metadata = extractMarkdownMetadata(repoPath, raw);
   const parsed = matter(raw);
+  const content = normalizeChatGptMathDelimiters(parsed.content);
   const file = await unified()
     .use(remarkParse)
     .use(remarkGfm)
@@ -244,10 +338,10 @@ export async function renderMarkdown(repoId: string, repoPath: string, raw: stri
     .use(rehypeHeadingIds(metadata.headings))
     .use(rehypeRewriteLinks(repoId, repoPath))
     .use(rehypeKatex)
-    .use(rehypeWrapTables)
+    .use(rehypeEnhanceOverflowContent)
     .use(rehypeSanitize, sanitizeSchema)
     .use(rehypeStringify)
-    .process(parsed.content);
+    .process(content);
 
   return {
     ...metadata,

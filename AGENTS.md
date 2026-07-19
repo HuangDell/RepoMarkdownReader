@@ -2,15 +2,9 @@
 
 ## Project
 
-This repository is for a self-hosted Markdown knowledge/blog reader. The target deployment is a Raspberry Pi. The app should periodically pull GitHub repositories, render Markdown documents with math formulas, and provide a reading experience similar to:
+This repository is for a self-hosted Markdown knowledge/blog reader. The target deployment is a Raspberry Pi. The app should periodically pull GitHub repositories, render Markdown documents with math formulas.
 
-https://labuladong.online/zh/algo/home/
-
-The current implementation direction is Fumadocs plus Next.js, with the app scaffolded under `web/`. Use the user's fork as a reference or possible upstream customization point if framework-level changes become necessary:
-
-https://github.com/HuangDell/fumadocs
-
-Do not fork or patch Fumadocs internals unless normal extension points are insufficient.
+The current implementation direction is Fumadocs plus Next.js, with the app scaffolded under `web/`. 
 
 ## Requirements
 
@@ -52,29 +46,3 @@ Development notes are in `docs/development.md`.
 
 In the Codex sandbox, `next build` or `next dev` may need escalated execution because Turbopack binds an internal local port. A normal user shell should not need anything special.
 
-## SWC Native Notes
-
-There was an earlier native SWC `Bus error` caused by a truncated `@next/swc-linux-x64-gnu` binary after an interrupted install. Reinstalling the package fixed it:
-
-```bash
-npm install --force --no-save @next/swc-linux-x64-gnu@16.2.9
-```
-
-For Next 16.2.9, the unpacked package should be about 130 MB. If native SWC fails again, check the installed binary size before changing framework versions.
-
-## Git And Hygiene
-
-- Keep `web/node_modules/`, `web/.next/`, `web/.source/`, `web/next-env.d.ts`, and `*.tsbuildinfo` out of git.
-- Keep local Codex/session directories such as `.agents/` and `.codex/` out of git.
-- Do not revert unrelated user changes.
-- Prefer scoped edits and update docs when project-level decisions change.
-
-## Last Known Verification
-
-The following passed under Node 22 after switching back to native SWC:
-
-- `npm run lint`
-- `npm run types:check`
-- `npm run build`
-
-The build was run with escalated execution in Codex due the Turbopack sandbox port-binding restriction.

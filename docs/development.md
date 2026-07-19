@@ -47,6 +47,12 @@ npx playwright install-deps chromium webkit
 
 Browser binaries are stored in Playwright's local cache and are not committed to git. For mobile reader checks, use a 390 × 844 viewport and verify that wide Markdown tables scroll horizontally inside their own container without widening the page.
 
+## Markdown Rendering Compatibility
+
+Math rendering accepts standard `$...$` and `$$...$$` delimiters, plus ChatGPT-style `\(...\)` and `\[...\]` delimiters. A standalone `[` / `]` block is also treated as display math when its body contains TeX-like operators. Delimiter normalization skips code blocks, inline code, links, images, raw HTML, and formulas that already use standard delimiters.
+
+Wide display formulas, long inline formulas, Markdown tables, and fenced code blocks scroll inside their own content area instead of widening the page.
+
 ## Runtime Configuration
 
 Copy `web/.env.example` to a local environment file and set:
