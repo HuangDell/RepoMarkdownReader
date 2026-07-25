@@ -1,6 +1,8 @@
 import 'server-only';
 import crypto from 'node:crypto';
+import { rehypeCode } from 'fumadocs-core/mdx-plugins/rehype-code';
 import matter from 'gray-matter';
+import katex from 'katex';
 import rehypeKatex from 'rehype-katex';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import rehypeStringify from 'rehype-stringify';
@@ -62,6 +64,20 @@ const protectedMathDelimiterNodeTypes = new Set([
 
 type SourceRange = { start: number; end: number };
 type SourceReplacement = SourceRange & { value: string };
+
+function isLikelyBareParenthesizedMath(body: string) {
+  if (!/\\[A-Za-z]+/.test(body)) return false;
+
+  try {
+    katex.renderToString(body, {
+      displayMode: false,
+      throwOnError: true,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function textContent(node: TreeNode): string {
   if (typeof node.value === 'string') return node.value;
@@ -161,6 +177,11 @@ function normalizeChatGptMathDelimiters(markdown: string) {
     (body) => /\\[A-Za-z]+|[_^={}]/.test(body),
   );
   addMatches(/\\\(([^\r\n]+?)\\\)/g, (body) => `$${body}$`, (body) => !body.includes('$'));
+  addMatches(
+    /\(([^()\r\n]+)\)/g,
+    (body) => `$${body}$`,
+    (body) => !body.includes('$') && isLikelyBareParenthesizedMath(body),
+  );
 
   return replacements
     .sort((left, right) => right.start - left.start)
@@ -247,6 +268,25 @@ function addClassName(node: TreeNode, className: string) {
   node.properties = { ...node.properties, className: [...classNames, className] };
 }
 
+function normalizeGeneratedHtmlProperties(node: TreeNode) {
+  if (!node.properties) return;
+
+  const htmlClassName = node.properties.class;
+  if (typeof htmlClassName === 'string' || Array.isArray(htmlClassName)) {
+    const hastClassName = node.properties.className;
+    const classNames = [htmlClassName, hastClassName]
+      .flatMap((value) => (Array.isArray(value) ? value : typeof value === 'string' ? value.split(/\s+/) : []))
+      .filter((value): value is string => typeof value === 'string' && value.length > 0);
+    const { class: _htmlClassName, ...properties } = node.properties;
+    node.properties = { ...properties, className: [...new Set(classNames)] };
+  }
+
+  if (node.properties.tabindex !== undefined && node.properties.tabIndex === undefined) {
+    const { tabindex, ...properties } = node.properties;
+    node.properties = { ...properties, tabIndex: tabindex };
+  }
+}
+
 function isTableScrollContainer(node: TreeNode) {
   return node.tagName === 'div' && tableScrollContainerClasses.every((className) => hasClassName(node, className));
 }
@@ -256,6 +296,7 @@ function rehypeEnhanceOverflowContent() {
     const enhance = (node: TreeNode, insideDisplayMath = false) => {
       if (!node.children) return;
 
+      normalizeGeneratedHtmlProperties(node);
       const isDisplayMath = node.tagName === 'span' && hasClassName(node, 'katex-display');
       if (node.tagName === 'pre') addClassName(node, 'reader-code-block');
       if (isDisplayMath) addClassName(node, 'reader-math-scroll');
@@ -341,6 +382,14 @@ export async function renderMarkdown(repoId: string, repoPath: string, raw: stri
     .use(rehypeHeadingIds(metadata.headings))
     .use(rehypeRewriteLinks(repoId, repoPath))
     .use(rehypeKatex)
+    .use(rehypeCode, {
+      langs: ['python'],
+      langAlias: { python3: 'python' },
+      fallbackLanguage: 'plaintext',
+      addLanguageClass: true,
+      icon: false,
+      tab: false,
+    })
     .use(rehypeEnhanceOverflowContent)
     .use(rehypeSanitize, sanitizeSchema)
     .use(rehypeStringify)

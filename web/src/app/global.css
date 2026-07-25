@@ -62,3 +62,18 @@ html > body[data-scroll-locked] {
   color: inherit;
   font: inherit;
 }
+
+.prose pre.reader-code-block.shiki {
+  padding-inline: 0;
+}
+
+.prose pre.reader-code-block.shiki > code {
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+  flex-direction: column;
+}
+
+.prose pre.reader-code-block.shiki .line {
+  display: block;
+}
