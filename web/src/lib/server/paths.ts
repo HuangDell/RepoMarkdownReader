@@ -49,6 +49,10 @@ export function displayNameFromPath(repoPath: string) {
   return basename.replace(/\.(md|markdown|mdx)$/i, '').replaceAll('-', ' ');
 }
 
+export function markdownFileStemFromPath(repoPath: string) {
+  return path.posix.basename(repoPath).replace(/\.(md|markdown|mdx)$/i, '');
+}
+
 export function relativePathFromSlug(slug: string[] | undefined) {
   return normalizeRepoPath((slug ?? []).join('/'));
 }

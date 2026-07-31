@@ -105,6 +105,12 @@ export async function getHeadCommit(worktree: string) {
   return result.stdout;
 }
 
+export async function getFileLastModifiedAt(worktree: string, repoPath: string) {
+  const normalized = normalizeRepoPath(repoPath);
+  const result = await runGit(['log', '-1', '--follow', '--format=%cI', '--', normalized], worktree);
+  return result.stdout || undefined;
+}
+
 export async function getDefaultBranch(worktree: string) {
   const originHead = await runGit(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD'], worktree).catch(() => ({ stdout: '' }));
   const branch = originHead.stdout.replace(/^origin\//, '').trim();

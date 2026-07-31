@@ -4,10 +4,19 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type * as PageTree from 'fumadocs-core/page-tree';
 import { getDb, dbTransaction, plainObject, plainObjects } from './db';
-import { cloneRepository, getDefaultBranch, getHeadCommit, pullRepository, withRepoLock } from './git';
+import { cloneRepository, getDefaultBranch, getFileLastModifiedAt, getHeadCommit, pullRepository, withRepoLock } from './git';
 import { parseGitHubUrl } from './github-url';
 import { extractMarkdownMetadata } from './markdown';
-import { displayNameFromPath, getRepoBasePath, getRepoWorktreePath, hrefForDoc, isMarkdownPath, normalizeRepoPath, resolveInWorktree } from './paths';
+import {
+  displayNameFromPath,
+  getRepoBasePath,
+  getRepoWorktreePath,
+  hrefForDoc,
+  isMarkdownPath,
+  markdownFileStemFromPath,
+  normalizeRepoPath,
+  resolveInWorktree,
+} from './paths';
 import { nowIso } from './time';
 import { appName } from '../shared';
 
@@ -295,7 +304,7 @@ export function buildPageTree(): PageTree.Root {
 
       const item: PageTree.Item = {
         type: 'page',
-        name: document.title || displayNameFromPath(document.path),
+        name: markdownFileStemFromPath(document.path),
         url: hrefForDoc(repo.id, document.path),
       };
 
@@ -357,10 +366,16 @@ export async function readDocumentFile(repoId: string, repoPath: string) {
   if (!repo) throw new Error('Repository not found.');
 
   const normalized = normalizeRepoPath(repoPath);
-  const fullPath = resolveInWorktree(getRepoWorktreePath(repoId), normalized);
-  const raw = await fs.readFile(fullPath, 'utf8');
+  const worktree = getRepoWorktreePath(repoId);
+  const fullPath = resolveInWorktree(worktree, normalized);
+  const [raw, stats, commit, gitLastModifiedAt] = await Promise.all([
+    fs.readFile(fullPath, 'utf8'),
+    fs.stat(fullPath),
+    getHeadCommit(worktree),
+    getFileLastModifiedAt(worktree, normalized).catch(() => undefined),
+  ]);
   const hash = crypto.createHash('sha256').update(raw).digest('hex');
-  const commit = await getHeadCommit(getRepoWorktreePath(repoId));
+  const lastModifiedAt = gitLastModifiedAt ?? stats.mtime.toISOString();
 
-  return { repo, path: normalized, raw, hash, commit };
+  return { repo, path: normalized, raw, hash, commit, lastModifiedAt };
 }
