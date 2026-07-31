@@ -31,8 +31,8 @@ export function DocumentLastModified({ value }: { value: string }) {
   }, [value]);
 
   return (
-    <p className="not-prose mt-2 text-sm text-fd-muted-foreground">
+    <span>
       Last modified: <time dateTime={value}>{formatted}</time>
-    </p>
+    </span>
   );
 }

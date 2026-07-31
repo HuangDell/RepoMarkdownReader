@@ -11,7 +11,7 @@ import { CommentSection } from '@/components/reader/comment-section';
 import { DocumentLastModified } from '@/components/reader/document-last-modified';
 import { SearchPanel } from '@/components/reader/search-panel';
 import { renderMarkdown } from '@/lib/server/markdown';
-import { hrefForDoc, relativePathFromSlug } from '@/lib/server/paths';
+import { hrefForDoc, markdownFileStemFromPath, relativePathFromSlug } from '@/lib/server/paths';
 import { getDocument, getFirstDocument, getRepository, listRepositories, readDocumentFile } from '@/lib/server/repositories';
 
 export const runtime = 'nodejs';
@@ -103,9 +103,11 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
 
   return (
     <DocsPage toc={rendered.toc}>
-      <DocsTitle>{rendered.title}</DocsTitle>
-      <DocsDescription className="mb-0">{rendered.description || `${repo.owner}/${repo.name} · ${repoPath}`}</DocsDescription>
-      <DocumentLastModified value={file.lastModifiedAt} />
+      <div className="not-prose flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-fd-muted-foreground">
+        <span className="font-medium text-fd-foreground">{markdownFileStemFromPath(repoPath)}</span>
+        <span aria-hidden="true">·</span>
+        <DocumentLastModified value={file.lastModifiedAt} />
+      </div>
       <div className="not-prose mt-4 flex flex-wrap gap-2 border-b pb-6 text-sm">
         <Link href={`/admin/repos/${encodeURIComponent(repoId)}/edit?path=${encodeURIComponent(repoPath)}`} className="rounded-md border px-3 py-2 hover:bg-fd-accent">
           Edit
