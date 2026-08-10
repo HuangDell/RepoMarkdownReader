@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
+
+const subscribe = () => () => {};
 
 function formatUtcFallback(value: string) {
   const date = new Date(value);
@@ -24,11 +26,8 @@ function formatLocalDateTime(value: string) {
 }
 
 export function DocumentLastModified({ value }: { value: string }) {
-  const [formatted, setFormatted] = useState(() => formatUtcFallback(value));
-
-  useEffect(() => {
-    setFormatted(formatLocalDateTime(value));
-  }, [value]);
+  const hydrated = useSyncExternalStore(subscribe, () => true, () => false);
+  const formatted = hydrated ? formatLocalDateTime(value) : formatUtcFallback(value);
 
   return (
     <span>

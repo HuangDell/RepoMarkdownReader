@@ -259,7 +259,7 @@ function getOrCreateFolder(children: PageTree.Node[], folderPath: string, name: 
     type: 'folder',
     name,
     folderPath,
-    defaultOpen: true,
+    defaultOpen: false,
     collapsible: true,
     children: [],
   };
@@ -288,7 +288,7 @@ export function buildPageTree(): PageTree.Root {
       type: 'folder',
       name: `${repo.owner}/${repo.name}`,
       folderPath: repo.id,
-      defaultOpen: true,
+      defaultOpen: false,
       collapsible: true,
       children: [],
     };
