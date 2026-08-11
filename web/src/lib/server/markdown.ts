@@ -347,6 +347,9 @@ const sanitizeSchema: Schema = {
     'mtable',
     'mtr',
     'mtd',
+    // KaTeX draws extensible radicals and some other glyphs with inline SVG.
+    'svg',
+    'path',
   ],
   attributes: {
     ...defaultSchema.attributes,
@@ -361,6 +364,8 @@ const sanitizeSchema: Schema = {
     code: [...((defaultSchema.attributes?.code as string[]) ?? []), 'className'],
     span: [...((defaultSchema.attributes?.span as string[]) ?? []), 'className', 'style'],
     div: [...((defaultSchema.attributes?.div as string[]) ?? []), 'className', 'style'],
+    svg: ['xmlns', 'width', 'height', 'viewBox', 'preserveAspectRatio'],
+    path: ['d'],
     h1: [...((defaultSchema.attributes?.h1 as string[]) ?? []), 'id'],
     h2: [...((defaultSchema.attributes?.h2 as string[]) ?? []), 'id'],
     h3: [...((defaultSchema.attributes?.h3 as string[]) ?? []), 'id'],
