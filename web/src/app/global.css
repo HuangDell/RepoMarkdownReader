@@ -12,6 +12,21 @@ html > body[data-scroll-locked] {
   --removed-body-scroll-bar-size: 0px !important;
 }
 
+/* The docs layout keeps the mobile sub-navigation in the grid with a zero
+ * desktop height. Hide it explicitly so its contents cannot overflow into the
+ * top edge of the desktop page. */
+@media (min-width: 768px) {
+  #nd-docs-layout #nd-subnav {
+    display: none !important;
+  }
+}
+
+/* Keep Fumadocs' depth guide, but place it in the gutter to the left of the
+ * nested folder and file labels instead of through their text. */
+#nd-sidebar [class~='before:inset-y-1']::before {
+  inset-inline-start: 0.25rem;
+}
+
 .prose :where(h1, h2, h3, h4, h5, h6)[id] {
   scroll-margin-top: 6rem;
 }
