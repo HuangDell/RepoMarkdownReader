@@ -2,7 +2,7 @@
 
 本项目是一个自托管的 GitHub Markdown 知识库/博客阅读器。目标部署环境是树莓派或普通 Linux 主机，用一个 Next.js 服务完成仓库管理、Markdown 渲染、全文搜索、侧边笔记和基础在线编辑写回。
 
-当前实现是单管理员 MVP，适合先在可信内网中试用。它不是 GitHub/Gitea 的替代品，也不是多人协作文档平台。
+当前实现面向个人使用，适合先在可信内网中试用。它不是 GitHub/Gitea 的替代品，也不是多人协作文档平台。
 
 ## 功能概览
 
@@ -52,7 +52,7 @@
 ### 前端组件
 
 - `@uiw/react-codemirror` 和 `@codemirror/lang-markdown`: 在线 Markdown 编辑器。
-- `lucide-react`: 管理端按钮和工具图标。
+- `lucide-react`: 操作按钮和工具图标。
 - `Tailwind CSS` 和 `fumadocs-ui` 样式：页面布局和视觉样式。
 
 ### 参考项目
@@ -66,8 +66,8 @@
 ├── docs/                 # 需求、开发记录和项目说明
 ├── web/                  # Next.js + Fumadocs 应用
 │   ├── src/app/          # 页面和 API routes
-│   ├── src/components/   # 管理端和阅读器组件
-│   └── src/lib/server/   # Git、SQLite、Markdown、认证等服务端逻辑
+│   ├── src/components/   # 仓库管理和阅读器组件
+│   └── src/lib/server/   # Git、SQLite、Markdown 等服务端逻辑
 └── data/                 # 运行时数据目录，默认本地生成，不进入 git
 ```
 
@@ -142,8 +142,6 @@ chmod 600 .env
 
 ```bash
 READER_DATA_DIR=../data
-READER_ADMIN_PASSWORD=change-this-password
-READER_SESSION_SECRET=replace-with-at-least-32-random-characters
 READER_GITHUB_TOKEN=github_pat_or_fine_grained_token
 READER_PULL_INTERVAL_MINUTES=15
 ```
@@ -151,8 +149,6 @@ READER_PULL_INTERVAL_MINUTES=15
 变量说明：
 
 - `READER_DATA_DIR`: 运行时数据目录。相对路径会基于 `web/` 工作目录解析，默认 `../data` 即项目根目录下的 `data/`。
-- `READER_ADMIN_PASSWORD`: 管理端登录密码。
-- `READER_SESSION_SECRET`: 用于签名登录 cookie，至少 32 个字符。可以用 `openssl rand -base64 48` 生成。
 - `READER_GITHUB_TOKEN`: 服务端 GitHub token。当前实现所有 Git 命令都会要求该变量存在；如果需要 push，token 必须有目标仓库内容读写权限。
 - `READER_PULL_INTERVAL_MINUTES`: 定时 pull 间隔，最小按 1 分钟处理。
 
@@ -206,20 +202,18 @@ http://<server-ip>:3000
 
 - `/`: 首页。
 - `/docs`: 阅读器。
-- `/admin/repos`: 仓库管理，需要登录。
-- `/login`: 管理员登录。
+- `/repos`: 仓库管理。
 
 
 
 ## 首次使用流程
 
-1. 打开 `http://<server-ip>:3000/admin/repos`。
-2. 用 `READER_ADMIN_PASSWORD` 登录。
-3. 输入 GitHub HTTPS clone URL，例如 `https://github.com/owner/repo.git`。
-4. 添加仓库后，服务会 clone 到 `data/repos/<repo-id>/worktree/` 并扫描 Markdown 文件。
-5. 打开 `/docs` 阅读文档。
-6. 在阅读页使用 `Edit` 进入编辑器，修改后预览并 `Commit & Push`。
-7. 需要手动同步时，在仓库管理页点击同步按钮。
+1. 打开 `http://<server-ip>:3000/repos`。
+2. 输入 GitHub HTTPS clone URL，例如 `https://github.com/owner/repo.git`。
+3. 添加仓库后，服务会 clone 到 `data/repos/<repo-id>/worktree/` 并扫描 Markdown 文件。
+4. 打开 `/docs` 阅读文档。
+5. 在阅读页使用 `Edit` 进入编辑器，修改后预览并 `Commit & Push`。
+6. 需要手动同步时，在仓库管理页点击同步按钮。
 
 当前 MVP 只支持 GitHub HTTPS URL。SSH URL 和通用 Git URL 尚未支持。
 
@@ -257,8 +251,7 @@ tar -czf reader-backup-$(date +%F).tgz data web/.env
 
 ## 安全注意事项
 
-- 管理端 API 和编辑 API 需要管理员登录。
-- `/docs`、搜索 API 和原始资源 API 当前是公开读。如果克隆了私有仓库，不要直接暴露到公网，除非前面再加统一认证或访问控制。
+- 所有页面和 API 默认直接可访问。如果克隆了私有仓库，不要直接暴露到公网，除非前面再加统一认证或访问控制。
 - `READER_GITHUB_TOKEN` 只应授予必要仓库和必要权限。
 - `web/.env` 应设置为只有运行用户可读，例如 `chmod 600 web/.env`。
 - 生产环境建议通过内网、VPN、反向代理认证或防火墙限制访问。
@@ -266,7 +259,7 @@ tar -czf reader-backup-$(date +%F).tgz data web/.env
 
 ## 当前限制
 
-- 当前是单管理员模型，没有多用户权限系统。
+- 当前是个人使用模型，没有多用户权限系统。
 - 周期同步是 Next.js 进程内定时器，不是独立任务队列或系统级 cron。
 - Git 冲突处理是基础版：检测到打开后仓库或文件变化会拒绝保存，需要手动同步后重试。
 - 在线编辑直接 push 到默认分支，没有 PR 工作流。

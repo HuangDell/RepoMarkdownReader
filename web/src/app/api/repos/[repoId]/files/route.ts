@@ -1,4 +1,3 @@
-import { requireAdmin } from '@/lib/server/auth';
 import { commitAndPushFile } from '@/lib/server/git';
 import { extractMarkdownMetadata, renderMarkdown } from '@/lib/server/markdown';
 import { normalizeRepoPath } from '@/lib/server/paths';
@@ -10,7 +9,6 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request, context: { params: Promise<{ repoId: string }> }) {
   try {
-    await requireAdmin();
     const { repoId } = await context.params;
     const { searchParams } = new URL(request.url);
     const repoPath = searchParams.get('path');
@@ -32,7 +30,6 @@ export async function GET(request: Request, context: { params: Promise<{ repoId:
 
 export async function POST(request: Request, context: { params: Promise<{ repoId: string }> }) {
   try {
-    await requireAdmin();
     const { repoId } = await context.params;
     const body = (await request.json()) as { path?: string; content?: string };
     if (!body.path || typeof body.content !== 'string') return jsonError('path and content are required.');
@@ -46,7 +43,6 @@ export async function POST(request: Request, context: { params: Promise<{ repoId
 
 export async function PUT(request: Request, context: { params: Promise<{ repoId: string }> }) {
   try {
-    await requireAdmin();
     const { repoId } = await context.params;
     const repository = getRepository(repoId);
     if (!repository) return jsonError('Repository not found.', 404);

@@ -24,8 +24,6 @@ cp .env.example .env
 关键变量：
 
 - `READER_DATA_DIR`
-- `READER_ADMIN_PASSWORD`
-- `READER_SESSION_SECRET`
 - `READER_GITHUB_TOKEN`
 - `READER_PULL_INTERVAL_MINUTES`
 
@@ -34,8 +32,7 @@ cp .env.example .env
 ## 主要入口
 
 - `/docs`: Markdown 阅读器。
-- `/admin/repos`: 仓库管理和同步。
-- `/login`: 管理员登录。
+- `/repos`: 仓库管理和同步。
 - `/api/repos`: 仓库管理 API。
 - `/api/comments`: 本地评论 API。
 - `/api/search`: SQLite FTS 搜索 API。

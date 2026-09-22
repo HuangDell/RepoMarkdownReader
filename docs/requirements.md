@@ -48,7 +48,7 @@ The product should feel closer to a personal blog or knowledge base than a raw G
 - Editing should show a preview before committing.
 - The system needs GitHub authentication or server-side Git credentials for private repositories and push operations.
 - Conflict handling is required when the remote repository changed after the local copy was loaded.
-- The first implementation can assume a single trusted admin user.
+- The first implementation can assume a single trusted local user.
 
 Potential authentication approaches:
 
@@ -60,7 +60,7 @@ Potential authentication approaches:
 - Support local comments that do not modify original Markdown files.
 - Comments should be displayed at the bottom of the document.
 - Comments should be saved locally and never committed by default.
-- The first implementation can require the single admin session to read, create, edit, and delete comments.
+- The first implementation can allow the local user to read, create, edit, and delete comments.
 - Comments should be associated with repository, branch/ref, and document path.
 
 ### Raspberry Pi Deployment
@@ -103,7 +103,7 @@ No surveyed project appears to match the full requirement set directly, especial
 - Important limitation:
   - The Git storage docs state that a Git repository must be dedicated to Wiki.js, and using only a subfolder or submodules is not supported there.
 - Fit:
-  - Strong reference for admin UX, page editing, authentication, and Git sync.
+  - Strong reference for management UX, page editing, authentication, and Git sync.
   - Less aligned with reading arbitrary existing GitHub repositories as-is, especially multiple repos with their own structure.
 
 ### Gitea / Forgejo
@@ -186,7 +186,7 @@ Recommended frontend bases:
 Projects not recommended as the main fork target:
 
 - Gitea / Forgejo: excellent Git management, but the product UX would feel like a Git forge rather than a personal Markdown reader.
-- Wiki.js: good wiki/admin features, but Git storage is more opinionated and less aligned with reading arbitrary multiple GitHub repositories as-is.
+  - Wiki.js: good wiki and management features, but Git storage is more opinionated and less aligned with reading arbitrary multiple GitHub repositories as-is.
 - Gollum: simple Git-backed wiki, useful as reference, but too wiki-shaped for the desired polished docs/blog experience.
 
 Difficulty estimate:
@@ -194,7 +194,7 @@ Difficulty estimate:
 - Static reader only: low to medium.
 - Multi-repository clone/pull plus Markdown rendering: medium.
 - Online edit, commit, push, credentials, and conflict handling: medium to high.
-- Admin-only local document comments: low to medium.
+- Local document comments: low to medium.
 - A polished labuladong-like desktop/mobile UI: medium, mostly frontend detail work.
 
 Overall, the project is feasible. The hard part is not rendering Markdown; the hard part is making Git writeback, repository sync, authentication, conflicts, and comments reliable.
@@ -208,25 +208,25 @@ Overall, the project is feasible. The hard part is not rendering Markdown; the h
 5. Browse Markdown files by repository and path.
 6. Render Markdown, formulas, code blocks, images, and relative links.
 7. Responsive desktop/mobile document viewer.
-8. Local admin comments attached to documents.
+8. Local comments attached to documents.
 9. Manual edit, preview, commit, and push for one repository.
 10. Basic conflict detection and error reporting.
 
 ## Implemented MVP Direction
 
-The initialized Next.js/Fumadocs app is being extended as a single-admin Markdown reader:
+The initialized Next.js/Fumadocs app is being extended as a single-user Markdown reader:
 
 - Repository metadata, document index, FTS search, comments, jobs, and sync events live in SQLite under `READER_DATA_DIR`.
 - Repositories clone into `data/repos/<repo-id>/worktree`.
 - GitHub HTTPS URLs are supported first; private repository clone/push uses a server-side fine-grained PAT through `GIT_ASKPASS`.
 - The `/docs` route is dynamic and renders cloned Markdown with GFM, math/KaTeX, sanitized HTML, rewritten relative links/assets, and a Fumadocs page tree.
-- Admin routes under `/admin/repos` require `READER_ADMIN_PASSWORD` and `READER_SESSION_SECRET`.
+- Repository management routes are available directly under `/repos` for this personal deployment.
 - Online edits compare the opened commit/hash before commit and push directly back to the repository default branch.
 
 ## Open Questions
 
 - Should the service only support GitHub, or should generic Git URLs be supported from the start?
-- Should comments ever support public read/write access, or remain admin-only?
+- Should comments remain open to all users, or should a future deployment add authentication?
 - Is the first version single-user only, or should multiple user accounts be planned immediately?
 - Should online editing push directly to the default branch, or create a branch/PR workflow?
 - Are private repositories required in the first version?
@@ -240,7 +240,7 @@ The initialized Next.js/Fumadocs app is being extended as a single-admin Markdow
 - HTML in Markdown should be sanitized or disabled.
 - Git credentials must be encrypted at rest or stored in a restricted file with clear operational guidance.
 - Push credentials should be scoped narrowly, ideally per repository.
-- Avoid exposing repository management and editing endpoints without authentication.
+- If the service is exposed beyond a trusted network, add authentication at the reverse proxy or deployment layer.
 - Pull/push operations should be serialized per repository to avoid corrupting the working tree.
 
 ## Candidate Architecture
@@ -252,7 +252,7 @@ The initialized Next.js/Fumadocs app is being extended as a single-admin Markdow
 - Markdown file scanner and metadata indexer.
 - Render API for Markdown to sanitized HTML.
 - Comments API backed by SQLite.
-- Auth middleware for admin-only operations.
+- Deployment-level access control when the service is exposed beyond a trusted network.
 
 ### Frontend
 

@@ -300,6 +300,71 @@ export async function createLocalFolder(repoId: string, parentPath: string, rawN
   });
 }
 
+export async function renameFolder(repoId: string, rawPath: string, rawName: string) {
+  const repository = getRepository(repoId);
+  if (!repository) throw new Error('Repository not found.');
+
+  const sourcePath = normalizeRepoPath(rawPath);
+  if (!sourcePath) throw new Error('The repository root cannot be renamed.');
+
+  const name = validateFolderName(rawName);
+  const parentPath = path.posix.dirname(sourcePath) === '.' ? '' : path.posix.dirname(sourcePath);
+  const targetPath = normalizeRepoPath(path.posix.join(parentPath, name));
+
+  return withRepoLock(repoId, async () => {
+    const worktree = getRepoWorktreePath(repoId);
+    const sourceFullPath = resolveInWorktree(worktree, sourcePath);
+    const targetFullPath = resolveInWorktree(worktree, targetPath);
+    const sourceStats = await fs.lstat(sourceFullPath).catch(() => undefined);
+
+    if (!sourceStats || !sourceStats.isDirectory()) throw new Error('The source folder does not exist.');
+    await assertInsideWorktree(worktree, sourceFullPath);
+
+    if (targetPath === sourcePath) {
+      return { path: sourcePath };
+    }
+
+    const targetExists = await fs.lstat(targetFullPath).catch(() => undefined);
+    const localFolders = listLocalFolders(repoId);
+    const targetOverlapsKnownFolder = localFolders.some(
+      (folder) => folder.path === targetPath || folder.path.startsWith(`${targetPath}/`),
+    );
+    if (targetExists || getDocument(repoId, targetPath) || targetOverlapsKnownFolder) {
+      throw conflictError('A file or folder with that name already exists.');
+    }
+
+    await fs.rename(sourceFullPath, targetFullPath);
+
+    try {
+      const timestamp = nowIso();
+      dbTransaction(() => {
+        for (const folder of localFolders
+          .filter((entry) => entry.path === sourcePath || entry.path.startsWith(`${sourcePath}/`))
+          .sort((a, b) => b.path.length - a.path.length)) {
+          const suffix = folder.path.slice(sourcePath.length);
+          const nextPath = `${targetPath}${suffix}`;
+          getDb()
+            .prepare('UPDATE local_folders SET path = ?, updated_at = ? WHERE repo_id = ? AND path = ?')
+            .run(nextPath, timestamp, repoId, folder.path);
+        }
+      });
+    } catch (error) {
+      await fs.rename(targetFullPath, sourceFullPath).catch(() => undefined);
+      throw error;
+    }
+
+    try {
+      await scanRepository(repoId);
+    } catch (error) {
+      markRepositoryLocalChanges(repoId);
+      throw error;
+    }
+
+    markRepositoryLocalChanges(repoId);
+    return { path: targetPath };
+  });
+}
+
 export async function uploadMarkdownFiles(
   repoId: string,
   folderPath: string,
@@ -468,14 +533,11 @@ export async function scanRepository(repoId: string) {
   }
 }
 
-type MutableFolder = PageTree.Folder & { repoId: string; folderPath: string; canManage: boolean };
+type MutableFolder = PageTree.Folder & { repoId: string; folderPath: string };
 
-function getOrCreateFolder(children: PageTree.Node[], repoId: string, folderPath: string, name: string, canManage: boolean): MutableFolder {
+function getOrCreateFolder(children: PageTree.Node[], repoId: string, folderPath: string, name: string): MutableFolder {
   const existing = children.find((node): node is MutableFolder => node.type === 'folder' && (node as MutableFolder).folderPath === folderPath);
-  if (existing) {
-    existing.canManage ||= canManage;
-    return existing;
-  }
+  if (existing) return existing;
 
   const folder: MutableFolder = {
     type: 'folder',
@@ -483,7 +545,6 @@ function getOrCreateFolder(children: PageTree.Node[], repoId: string, folderPath
     icon: createElement(Folder, { className: 'reader-sidebar-folder-glyph' }),
     repoId,
     folderPath,
-    canManage,
     defaultOpen: false,
     collapsible: true,
     children: [],
@@ -503,17 +564,17 @@ function sortPageNodes(nodes: PageTree.Node[]) {
   }
 }
 
-function addFolderPath(repoFolder: MutableFolder, repoId: string, folderPath: string, canManage: boolean) {
+function addFolderPath(repoFolder: MutableFolder, repoId: string, folderPath: string) {
   const segments = folderPath.split('/').filter(Boolean);
   let current = repoFolder;
 
   for (let index = 0; index < segments.length; index += 1) {
     const currentPath = segments.slice(0, index + 1).join('/');
-    current = getOrCreateFolder(current.children, repoId, currentPath, segments[index], canManage);
+    current = getOrCreateFolder(current.children, repoId, currentPath, segments[index]);
   }
 }
 
-export function buildPageTree(canManage = false): PageTree.Root {
+export function buildPageTree(): PageTree.Root {
   const repos = listRepositories();
   const children: PageTree.Node[] = [];
 
@@ -524,7 +585,6 @@ export function buildPageTree(canManage = false): PageTree.Root {
       name: `${repo.owner}/${repo.name}`,
       icon: createElement(Folder, { className: 'reader-sidebar-folder-glyph' }),
       repoId: repo.id,
-      canManage,
       folderPath: '',
       defaultOpen: false,
       collapsible: true,
@@ -532,7 +592,7 @@ export function buildPageTree(canManage = false): PageTree.Root {
     };
 
     for (const folder of listLocalFolders(repo.id)) {
-      addFolderPath(repoFolder, repo.id, folder.path, canManage);
+      addFolderPath(repoFolder, repo.id, folder.path);
     }
 
     for (const document of documents) {
@@ -541,7 +601,7 @@ export function buildPageTree(canManage = false): PageTree.Root {
 
       for (let index = 0; index < segments.length - 1; index += 1) {
         const folderPath = segments.slice(0, index + 1).join('/');
-        current = getOrCreateFolder(current.children, repo.id, folderPath, segments[index], canManage);
+        current = getOrCreateFolder(current.children, repo.id, folderPath, segments[index]);
       }
 
       const item: PageTree.Item = {

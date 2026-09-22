@@ -1,4 +1,3 @@
-import { requireAdmin } from '@/lib/server/auth';
 import { syncRepository } from '@/lib/server/repositories';
 import { jsonError, jsonOk } from '@/lib/server/http';
 
@@ -7,7 +6,6 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(_request: Request, context: { params: Promise<{ repoId: string }> }) {
   try {
-    await requireAdmin();
     const { repoId } = await context.params;
     const repository = await syncRepository(repoId);
     return jsonOk({ repository });

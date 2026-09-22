@@ -85,11 +85,6 @@ export function RepoManager({ initialRepositories, hasGithubToken }: RepoManager
           <h1 className="text-2xl font-semibold">Repositories</h1>
           <p className="text-sm text-fd-muted-foreground">Clone, sync, browse, edit, and remove GitHub Markdown sources.</p>
         </div>
-        <form action="/api/auth/logout" method="post">
-          <button className="rounded-md border px-3 py-2 text-sm hover:bg-fd-accent" type="submit">
-            Log out
-          </button>
-        </form>
       </div>
 
       {!hasGithubToken ? (
@@ -155,7 +150,7 @@ export function RepoManager({ initialRepositories, hasGithubToken }: RepoManager
                 </button>
                 <Link
                   title="Edit default branch files"
-                  href={`/admin/repos/${encodeURIComponent(repo.id)}/edit`}
+                  href={`/repos/${encodeURIComponent(repo.id)}/edit`}
                   className="inline-flex size-9 items-center justify-center rounded-md border hover:bg-fd-accent"
                 >
                   <GitBranch className="size-4" />

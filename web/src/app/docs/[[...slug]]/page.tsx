@@ -34,7 +34,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
           </div>
           {repositories.length === 0 ? (
             <div className="not-prose rounded-md border p-4 text-sm text-fd-muted-foreground">
-              No repositories have been added. Open <Link href="/admin/repos" className="underline">repository admin</Link> to add one.
+              No repositories have been added. Open <Link href="/repos" className="underline">repositories</Link> to add one.
             </div>
           ) : (
             <div className="not-prose grid gap-3">
@@ -70,8 +70,8 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
           <DocsDescription>No Markdown files are indexed for this repository yet.</DocsDescription>
           <DocsBody>
             <div className="not-prose flex gap-2">
-              <Link href="/admin/repos" className="rounded-md border px-3 py-2 text-sm hover:bg-fd-accent">
-                Repository admin
+              <Link href="/repos" className="rounded-md border px-3 py-2 text-sm hover:bg-fd-accent">
+                Repositories
               </Link>
             </div>
           </DocsBody>
@@ -113,7 +113,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
           <span className="rounded-md border border-fd-primary/40 bg-fd-primary/10 px-3 py-2 text-fd-primary">Local file · new</span>
         ) : (
           <>
-            <Link href={`/admin/repos/${encodeURIComponent(repoId)}/edit?path=${encodeURIComponent(repoPath)}`} className="rounded-md border px-3 py-2 hover:bg-fd-accent">
+            <Link href={`/repos/${encodeURIComponent(repoId)}/edit?path=${encodeURIComponent(repoPath)}`} className="rounded-md border px-3 py-2 hover:bg-fd-accent">
               Edit
             </Link>
             <a

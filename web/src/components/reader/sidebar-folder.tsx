@@ -9,15 +9,23 @@ import {
   SidebarFolderLink,
   SidebarFolderTrigger,
 } from 'fumadocs-ui/components/sidebar/base';
-import { FolderPlus, LoaderCircle, Upload } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { ChevronDown, FolderPlus, LoaderCircle, Pencil, Upload } from 'lucide-react';
+import { createContext, useContext, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 type ReaderFolder = PageTree.Folder & {
   repoId: string;
   folderPath: string;
-  canManage: boolean;
 };
+
+interface ReaderSidebarFolderContextValue {
+  selectedPath: string;
+  selectFolder: (folderPath: string) => void;
+  updateFolderPath: (fromPath: string, toPath: string) => void;
+  beginCreateFolder: () => void;
+}
+
+const ReaderSidebarFolderContext = createContext<ReaderSidebarFolderContextValue | null>(null);
 
 function isActiveUrl(url: string, pathname: string) {
   return pathname === url || pathname.startsWith(`${url}/`);
@@ -33,17 +41,43 @@ export function ReaderSidebarFolder({ item, children }: { item: PageTree.Folder;
   const treePath = useTreePath();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const inheritedContext = useContext(ReaderSidebarFolderContext);
+  const isRepositoryFolder = folder.folderPath === '';
+  const [selectedPath, setSelectedPath] = useState('');
+  const [createParentPath, setCreateParentPath] = useState<string | null>(null);
+  const [createName, setCreateName] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [folderName, setFolderName] = useState('');
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameName, setRenameName] = useState(String(folder.name));
   const [message, setMessage] = useState('');
+  const createSubmittingRef = useRef(false);
+  const renameSubmittingRef = useRef(false);
 
   const active = treePath.includes(item);
-  const canManage = folder.canManage === true;
+  const context = isRepositoryFolder
+    ? {
+        selectedPath,
+        selectFolder: setSelectedPath,
+        updateFolderPath: (fromPath: string, toPath: string) => {
+          setSelectedPath((current) => {
+            if (current === fromPath) return toPath;
+            if (current.startsWith(`${fromPath}/`)) return `${toPath}${current.slice(fromPath.length)}`;
+            return current;
+          });
+        },
+        beginCreateFolder: () => {
+          setCreateParentPath(selectedPath);
+          setCreateName('');
+          setMessage('');
+        },
+      }
+    : inheritedContext;
+
+  const selected = context?.selectedPath === folder.folderPath;
 
   async function uploadFiles(files: File[]) {
-    if (!files.length || !canManage) return;
+    if (!files.length) return;
 
     setIsBusy(true);
     setMessage('');
@@ -68,33 +102,72 @@ export function ReaderSidebarFolder({ item, children }: { item: PageTree.Folder;
     }
   }
 
-  async function createFolder(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!folderName.trim() || !canManage) return;
+  async function createFolder() {
+    if (createParentPath === null || !createName.trim() || createSubmittingRef.current) return;
 
+    createSubmittingRef.current = true;
     setIsBusy(true);
     setMessage('');
     try {
       const response = await fetch(`/api/repos/${encodeURIComponent(folder.repoId)}/folders`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ parentPath: folder.folderPath, name: folderName }),
+        body: JSON.stringify({ parentPath: createParentPath, name: createName }),
       });
       const data = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(data.error ?? 'Failed to create folder.');
 
-      setFolderName('');
-      setShowCreateForm(false);
+      setCreateName('');
+      setCreateParentPath(null);
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to create folder.');
     } finally {
+      createSubmittingRef.current = false;
       setIsBusy(false);
     }
   }
 
+  function cancelCreateFolder() {
+    setCreateName('');
+    setCreateParentPath(null);
+  }
+
+  async function renameFolder() {
+    const nextName = renameName.trim();
+    if (!nextName || isRepositoryFolder || renameSubmittingRef.current) return;
+
+    renameSubmittingRef.current = true;
+    setIsBusy(true);
+    setMessage('');
+    try {
+      const response = await fetch(`/api/repos/${encodeURIComponent(folder.repoId)}/folders`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ path: folder.folderPath, name: nextName }),
+      });
+      const data = (await response.json()) as { folder?: { path?: string }; error?: string };
+      if (!response.ok) throw new Error(data.error ?? 'Failed to rename folder.');
+
+      const nextPath = data.folder?.path;
+      if (nextPath) context?.updateFolderPath(folder.folderPath, nextPath);
+      setIsRenaming(false);
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Failed to rename folder.');
+    } finally {
+      renameSubmittingRef.current = false;
+      setIsBusy(false);
+    }
+  }
+
+  function cancelRename() {
+    setRenameName(String(folder.name));
+    setIsRenaming(false);
+  }
+
   function handleDragOver(event: React.DragEvent<HTMLDivElement>) {
-    if (!canManage || !event.dataTransfer.types.includes('Files')) return;
+    if (!event.dataTransfer.types.includes('Files')) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = 'copy';
     setIsDragging(true);
@@ -106,14 +179,13 @@ export function ReaderSidebarFolder({ item, children }: { item: PageTree.Folder;
   }
 
   function handleDrop(event: React.DragEvent<HTMLDivElement>) {
-    if (!canManage) return;
     event.preventDefault();
     setIsDragging(false);
     void uploadFiles(Array.from(event.dataTransfer.files));
   }
 
-  const controls = canManage ? (
-    <div className="flex shrink-0 items-center gap-0.5" onClick={stopPropagation} onKeyDown={stopPropagation}>
+  const controls = (
+    <div className="reader-sidebar-folder-controls" onClick={stopPropagation} onKeyDown={stopPropagation}>
       <input
         ref={inputRef}
         type="file"
@@ -132,36 +204,114 @@ export function ReaderSidebarFolder({ item, children }: { item: PageTree.Folder;
       >
         {isBusy ? <LoaderCircle className="size-3.5 animate-spin" /> : <Upload className="size-3.5" />}
       </button>
-      <button
-        type="button"
-        title="Create subfolder"
-        aria-label={`Create a subfolder in ${String(folder.name)}`}
-        disabled={isBusy}
-        onClick={() => setShowCreateForm((value) => !value)}
-        className="inline-flex size-7 items-center justify-center rounded-md text-fd-muted-foreground hover:bg-fd-accent hover:text-fd-accent-foreground disabled:opacity-50"
-      >
-        <FolderPlus className="size-3.5" />
-      </button>
+      {isRepositoryFolder ? (
+        createParentPath === null ? (
+          <button
+            type="button"
+            title="Create subfolder in selected folder"
+            aria-label="Create a subfolder in the selected folder"
+            disabled={isBusy}
+            onClick={() => context?.beginCreateFolder()}
+            className="inline-flex size-7 items-center justify-center rounded-md text-fd-muted-foreground hover:bg-fd-accent hover:text-fd-accent-foreground disabled:opacity-50"
+          >
+            <FolderPlus className="size-3.5" />
+          </button>
+        ) : (
+          <form
+            className="reader-sidebar-folder-create-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void createFolder();
+            }}
+          >
+            <input
+              autoFocus
+              value={createName}
+              onChange={(event) => setCreateName(event.target.value)}
+              onBlur={(event) => {
+                if (event.currentTarget.form?.contains(event.relatedTarget as Node | null)) return;
+                if (createName.trim()) void createFolder();
+                else cancelCreateFolder();
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  event.preventDefault();
+                  cancelCreateFolder();
+                }
+              }}
+              placeholder="Folder name"
+              aria-label="New folder name"
+              disabled={isBusy}
+              className="reader-sidebar-folder-inline-input"
+            />
+          </form>
+        )
+      ) : (
+        <button
+          type="button"
+          title="Rename folder"
+          aria-label={`Rename ${String(folder.name)}`}
+          disabled={isBusy}
+          onClick={() => {
+            setRenameName(String(folder.name));
+            setIsRenaming(true);
+          }}
+          className="inline-flex size-7 items-center justify-center rounded-md text-fd-muted-foreground hover:bg-fd-accent hover:text-fd-accent-foreground disabled:opacity-50"
+        >
+          <Pencil className="size-3.5" />
+        </button>
+      )}
     </div>
-  ) : null;
+  );
 
-  const title = folder.index ? (
+  const title = isRenaming ? (
+    <div className="reader-sidebar-folder-trigger reader-sidebar-folder-editing" onClick={stopPropagation}>
+      <ChevronDown data-icon="true" className="size-4 shrink-0" />
+      <span className="reader-sidebar-folder-icon">{folder.icon}</span>
+      <input
+        autoFocus
+        value={renameName}
+        onChange={(event) => setRenameName(event.target.value)}
+        onBlur={(event) => {
+          if (event.currentTarget.form?.contains(event.relatedTarget as Node | null)) return;
+          if (renameName.trim()) void renameFolder();
+          else cancelRename();
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            void renameFolder();
+          } else if (event.key === 'Escape') {
+            event.preventDefault();
+            cancelRename();
+          }
+        }}
+        aria-label={`Rename ${String(folder.name)}`}
+        disabled={isBusy}
+        className="reader-sidebar-folder-inline-input min-w-0 flex-1"
+      />
+    </div>
+  ) : folder.index ? (
     <SidebarFolderLink
       href={folder.index.url}
       active={isActiveUrl(folder.index.url, pathname)}
-      className="reader-sidebar-folder-link"
+      className={`reader-sidebar-folder-link${selected ? ' reader-sidebar-folder-selected' : ''}`}
+      onPointerDown={() => context?.selectFolder(folder.folderPath)}
     >
       <span className="reader-sidebar-folder-icon">{folder.icon}</span>
       <span className="min-w-0 truncate">{folder.name}</span>
     </SidebarFolderLink>
   ) : (
-    <SidebarFolderTrigger className="reader-sidebar-folder-trigger">
+    <SidebarFolderTrigger
+      className={`reader-sidebar-folder-trigger${selected ? ' reader-sidebar-folder-selected' : ''}`}
+      onPointerDown={() => context?.selectFolder(folder.folderPath)}
+    >
       <span className="reader-sidebar-folder-icon">{folder.icon}</span>
       <span className="min-w-0 truncate">{folder.name}</span>
     </SidebarFolderTrigger>
   );
 
-  return (
+  const content = (
     <div
       className={isDragging ? 'rounded-lg bg-fd-primary/10 ring-1 ring-fd-primary/50' : undefined}
       onDragOver={handleDragOver}
@@ -173,29 +323,15 @@ export function ReaderSidebarFolder({ item, children }: { item: PageTree.Folder;
           {title}
           {controls}
         </div>
-        {showCreateForm ? (
-          <form className="my-1 flex items-center gap-1 px-2" onSubmit={createFolder}>
-            <input
-              autoFocus
-              value={folderName}
-              onChange={(event) => setFolderName(event.target.value)}
-              placeholder="Folder name"
-              aria-label="New folder name"
-              disabled={isBusy}
-              className="min-w-0 flex-1 rounded-md border bg-transparent px-2 py-1 text-xs outline-none focus:border-fd-primary"
-            />
-            <button
-              type="submit"
-              disabled={isBusy || !folderName.trim()}
-              className="rounded-md bg-fd-primary px-2 py-1 text-xs font-medium text-fd-primary-foreground disabled:opacity-50"
-            >
-              Add
-            </button>
-          </form>
-        ) : null}
         {message ? <p className="px-2 py-1 text-xs text-red-600 dark:text-red-300" role="status">{message}</p> : null}
         <SidebarFolderContent className="reader-sidebar-folder-content">{children}</SidebarFolderContent>
       </SidebarFolder>
     </div>
   );
+
+  if (isRepositoryFolder) {
+    return <ReaderSidebarFolderContext.Provider value={context!}>{content}</ReaderSidebarFolderContext.Provider>;
+  }
+
+  return content;
 }

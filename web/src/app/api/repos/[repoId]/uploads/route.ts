@@ -1,4 +1,3 @@
-import { requireAdmin } from '@/lib/server/auth';
 import { jsonError, jsonOk } from '@/lib/server/http';
 import { uploadMarkdownFiles } from '@/lib/server/repositories';
 
@@ -9,7 +8,6 @@ const maxFileSize = 10 * 1024 * 1024;
 
 export async function POST(request: Request, context: { params: Promise<{ repoId: string }> }) {
   try {
-    await requireAdmin();
     const { repoId } = await context.params;
     const formData = await request.formData();
     const folder = formData.get('folder');
@@ -37,7 +35,7 @@ export async function POST(request: Request, context: { params: Promise<{ repoId
     const paths = await uploadMarkdownFiles(repoId, folder, files);
     return jsonOk({ files: paths }, { status: 201 });
   } catch (error) {
-    const status = error instanceof Error && error.message === 'Unauthorized.' ? 401 : error instanceof Error && error.name === 'ConflictError' ? 409 : 400;
+    const status = error instanceof Error && error.name === 'ConflictError' ? 409 : 400;
     return jsonError(error instanceof Error ? error.message : 'Failed to upload files.', status);
   }
 }

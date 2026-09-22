@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
-import { MarkdownEditor } from '@/components/admin/markdown-editor';
-import { isAdminSession } from '@/lib/server/auth';
+import { notFound } from 'next/navigation';
+import { MarkdownEditor } from '@/components/markdown-editor';
 import { getDocument, listDocuments, readDocumentFile } from '@/lib/server/repositories';
 
 export const runtime = 'nodejs';
@@ -11,8 +10,6 @@ export default async function EditPage(props: {
   params: Promise<{ repoId: string }>;
   searchParams: Promise<{ path?: string }>;
 }) {
-  if (!(await isAdminSession())) redirect('/login?redirectTo=/admin/repos');
-
   const { repoId } = await props.params;
   const searchParams = await props.searchParams;
   const docs = listDocuments(repoId).filter((document) => document.origin === 'git');
@@ -22,7 +19,7 @@ export default async function EditPage(props: {
       <main className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-8">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-xl font-semibold">Choose a file to edit</h1>
-          <Link href="/admin/repos" className="rounded-md border px-3 py-2 text-sm hover:bg-fd-accent">
+          <Link href="/repos" className="rounded-md border px-3 py-2 text-sm hover:bg-fd-accent">
             Repositories
           </Link>
         </div>
@@ -31,7 +28,7 @@ export default async function EditPage(props: {
             <p className="p-4 text-sm text-fd-muted-foreground">No Git-tracked Markdown files are available to edit.</p>
           ) : (
             docs.map((doc) => (
-              <Link key={doc.path} className="block p-3 hover:bg-fd-accent" href={`/admin/repos/${encodeURIComponent(repoId)}/edit?path=${encodeURIComponent(doc.path)}`}>
+              <Link key={doc.path} className="block p-3 hover:bg-fd-accent" href={`/repos/${encodeURIComponent(repoId)}/edit?path=${encodeURIComponent(doc.path)}`}>
                 <p className="font-medium">{doc.title}</p>
                 <p className="text-xs text-fd-muted-foreground">{doc.path}</p>
               </Link>

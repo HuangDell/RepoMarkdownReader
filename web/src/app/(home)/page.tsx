@@ -13,8 +13,8 @@ export default function HomePage() {
         <Link href="/docs" className="rounded-md bg-fd-primary px-4 py-2 text-sm font-medium text-fd-primary-foreground">
           Open reader
         </Link>
-        <Link href="/admin/repos" className="rounded-md border px-4 py-2 text-sm hover:bg-fd-accent">
-          Manage repositories
+        <Link href="/repos" className="rounded-md border px-4 py-2 text-sm hover:bg-fd-accent">
+          Repositories
         </Link>
       </div>
     </div>
