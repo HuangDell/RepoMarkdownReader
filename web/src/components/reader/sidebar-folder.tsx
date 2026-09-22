@@ -149,17 +149,14 @@ export function ReaderSidebarFolder({ item, children }: { item: PageTree.Folder;
     <SidebarFolderLink
       href={folder.index.url}
       active={isActiveUrl(folder.index.url, pathname)}
-      className="min-w-0 flex-1"
-      onClick={(event) => {
-        if (event.target instanceof Element && event.target.closest('button')) event.preventDefault();
-      }}
+      className="reader-sidebar-folder-link"
     >
-      {folder.icon}
+      <span className="reader-sidebar-folder-icon">{folder.icon}</span>
       <span className="min-w-0 truncate">{folder.name}</span>
     </SidebarFolderLink>
   ) : (
-    <SidebarFolderTrigger className="min-w-0 flex-1">
-      {folder.icon}
+    <SidebarFolderTrigger className="reader-sidebar-folder-trigger">
+      <span className="reader-sidebar-folder-icon">{folder.icon}</span>
       <span className="min-w-0 truncate">{folder.name}</span>
     </SidebarFolderTrigger>
   );
@@ -172,7 +169,7 @@ export function ReaderSidebarFolder({ item, children }: { item: PageTree.Folder;
       onDrop={handleDrop}
     >
       <SidebarFolder collapsible={folder.collapsible} active={active} defaultOpen={folder.defaultOpen}>
-        <div className="flex items-center gap-1">
+        <div className="reader-sidebar-folder-row">
           {title}
           {controls}
         </div>
@@ -197,7 +194,7 @@ export function ReaderSidebarFolder({ item, children }: { item: PageTree.Folder;
           </form>
         ) : null}
         {message ? <p className="px-2 py-1 text-xs text-red-600 dark:text-red-300" role="status">{message}</p> : null}
-        <SidebarFolderContent>{children}</SidebarFolderContent>
+        <SidebarFolderContent className="reader-sidebar-folder-content">{children}</SidebarFolderContent>
       </SidebarFolder>
     </div>
   );

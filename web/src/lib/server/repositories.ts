@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createElement } from 'react';
 import type * as PageTree from 'fumadocs-core/page-tree';
+import { FileText, Folder } from 'lucide-react';
 import { getDb, dbTransaction, plainObject, plainObjects } from './db';
 import {
   cloneRepository,
@@ -479,6 +480,7 @@ function getOrCreateFolder(children: PageTree.Node[], repoId: string, folderPath
   const folder: MutableFolder = {
     type: 'folder',
     name,
+    icon: createElement(Folder, { className: 'reader-sidebar-folder-glyph' }),
     repoId,
     folderPath,
     canManage,
@@ -520,6 +522,7 @@ export function buildPageTree(canManage = false): PageTree.Root {
     const repoFolder: MutableFolder = {
       type: 'folder',
       name: `${repo.owner}/${repo.name}`,
+      icon: createElement(Folder, { className: 'reader-sidebar-folder-glyph' }),
       repoId: repo.id,
       canManage,
       folderPath: '',
@@ -559,6 +562,7 @@ export function buildPageTree(canManage = false): PageTree.Root {
                 ),
               )
             : markdownFileStemFromPath(document.path),
+        icon: createElement(FileText, { className: 'reader-sidebar-file-glyph' }),
         url: hrefForDoc(repo.id, document.path),
       };
 
