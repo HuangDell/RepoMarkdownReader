@@ -23,6 +23,11 @@ interface ReaderSidebarFolderContextValue {
   selectFolder: (folderPath: string) => void;
   updateFolderPath: (fromPath: string, toPath: string) => void;
   beginCreateFolder: () => void;
+  createParentPath: string | null;
+  createName: string;
+  setCreateName: (name: string) => void;
+  submitCreateFolder: () => void;
+  cancelCreateFolder: () => void;
 }
 
 const ReaderSidebarFolderContext = createContext<ReaderSidebarFolderContextValue | null>(null);
@@ -71,10 +76,18 @@ export function ReaderSidebarFolder({ item, children }: { item: PageTree.Folder;
           setCreateName('');
           setMessage('');
         },
+        createParentPath,
+        createName,
+        setCreateName,
+        submitCreateFolder: () => void createFolder(),
+        cancelCreateFolder,
       }
     : inheritedContext;
 
-  const selected = context?.selectedPath === folder.folderPath;
+  const currentSelectedPath = isRepositoryFolder ? selectedPath : inheritedContext?.selectedPath;
+  const pendingCreatePath = isRepositoryFolder ? createParentPath : inheritedContext?.createParentPath;
+  const folderContext = context as ReaderSidebarFolderContextValue;
+  const selected = currentSelectedPath === folder.folderPath;
 
   async function uploadFiles(files: File[]) {
     if (!files.length) return;
@@ -205,47 +218,16 @@ export function ReaderSidebarFolder({ item, children }: { item: PageTree.Folder;
         {isBusy ? <LoaderCircle className="size-3.5 animate-spin" /> : <Upload className="size-3.5" />}
       </button>
       {isRepositoryFolder ? (
-        createParentPath === null ? (
-          <button
-            type="button"
-            title="Create subfolder in selected folder"
-            aria-label="Create a subfolder in the selected folder"
-            disabled={isBusy}
-            onClick={() => context?.beginCreateFolder()}
-            className="inline-flex size-7 items-center justify-center rounded-md text-fd-muted-foreground hover:bg-fd-accent hover:text-fd-accent-foreground disabled:opacity-50"
-          >
-            <FolderPlus className="size-3.5" />
-          </button>
-        ) : (
-          <form
-            className="reader-sidebar-folder-create-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void createFolder();
-            }}
-          >
-            <input
-              autoFocus
-              value={createName}
-              onChange={(event) => setCreateName(event.target.value)}
-              onBlur={(event) => {
-                if (event.currentTarget.form?.contains(event.relatedTarget as Node | null)) return;
-                if (createName.trim()) void createFolder();
-                else cancelCreateFolder();
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Escape') {
-                  event.preventDefault();
-                  cancelCreateFolder();
-                }
-              }}
-              placeholder="Folder name"
-              aria-label="New folder name"
-              disabled={isBusy}
-              className="reader-sidebar-folder-inline-input"
-            />
-          </form>
-        )
+        <button
+          type="button"
+          title="Create subfolder in selected folder"
+          aria-label="Create a subfolder in the selected folder"
+          disabled={isBusy || createParentPath !== null}
+          onClick={() => context?.beginCreateFolder()}
+          className="inline-flex size-7 items-center justify-center rounded-md text-fd-muted-foreground hover:bg-fd-accent hover:text-fd-accent-foreground disabled:opacity-50"
+        >
+          <FolderPlus className="size-3.5" />
+        </button>
       ) : (
         <button
           type="button"
@@ -318,13 +300,53 @@ export function ReaderSidebarFolder({ item, children }: { item: PageTree.Folder;
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <SidebarFolder collapsible={folder.collapsible} active={active} defaultOpen={folder.defaultOpen}>
+      <SidebarFolder
+        collapsible={folder.collapsible}
+        active={active}
+        defaultOpen={folder.defaultOpen || pendingCreatePath === folder.folderPath}
+      >
         <div className="reader-sidebar-folder-row">
           {title}
           {controls}
         </div>
         {message ? <p className="px-2 py-1 text-xs text-red-600 dark:text-red-300" role="status">{message}</p> : null}
-        <SidebarFolderContent className="reader-sidebar-folder-content">{children}</SidebarFolderContent>
+        <SidebarFolderContent className="reader-sidebar-folder-content">
+          {pendingCreatePath === folder.folderPath ? (
+            <form
+              className="reader-sidebar-folder-pending-row"
+              onSubmit={(event) => {
+                event.preventDefault();
+                folderContext.submitCreateFolder();
+              }}
+            >
+              <span className="reader-sidebar-folder-pending-chevron" aria-hidden="true">
+                <ChevronDown className="size-4 -rotate-90" />
+              </span>
+              <span className="reader-sidebar-folder-icon">{folder.icon}</span>
+              <input
+                autoFocus
+                value={folderContext.createName}
+                onChange={(event) => folderContext.setCreateName(event.target.value)}
+                onBlur={(event) => {
+                  if (event.currentTarget.form?.contains(event.relatedTarget as Node | null)) return;
+                  if (folderContext.createName.trim()) folderContext.submitCreateFolder();
+                  else folderContext.cancelCreateFolder();
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') {
+                    event.preventDefault();
+                    folderContext.cancelCreateFolder();
+                  }
+                }}
+                placeholder="Folder name"
+                aria-label="New folder name"
+                disabled={isBusy}
+                className="reader-sidebar-folder-inline-input"
+              />
+            </form>
+          ) : null}
+          {children}
+        </SidebarFolderContent>
       </SidebarFolder>
     </div>
   );
