@@ -26,7 +26,7 @@ function syncDueRepositories() {
       const dueBefore = Date.now() - intervalMs;
 
       for (const repo of listRepositories()) {
-        if (repo.status === 'cloning' || repo.status === 'syncing') continue;
+        if (repo.status === 'cloning' || repo.status === 'syncing' || repo.status === 'local_changes') continue;
         const lastSyncTime = repo.last_sync_at ? Date.parse(repo.last_sync_at) : 0;
         if (lastSyncTime > dueBefore) continue;
 

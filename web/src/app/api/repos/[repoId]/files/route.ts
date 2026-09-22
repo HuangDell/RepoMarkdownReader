@@ -2,7 +2,7 @@ import { requireAdmin } from '@/lib/server/auth';
 import { commitAndPushFile } from '@/lib/server/git';
 import { extractMarkdownMetadata, renderMarkdown } from '@/lib/server/markdown';
 import { normalizeRepoPath } from '@/lib/server/paths';
-import { getRepository, readDocumentFile, scanRepository } from '@/lib/server/repositories';
+import { getDocument, getRepository, readDocumentFile, refreshRepositoryStatus, scanRepository } from '@/lib/server/repositories';
 import { jsonError, jsonOk } from '@/lib/server/http';
 
 export const runtime = 'nodejs';
@@ -64,6 +64,10 @@ export async function PUT(request: Request, context: { params: Promise<{ repoId:
       return jsonError('path, content, baseCommit, baseHash, and currentHash are required.');
     }
 
+    if (getDocument(repoId, body.path)?.origin === 'local') {
+      return jsonError('Local files are read-only until the commit workflow is enabled.', 409);
+    }
+
     const result = await commitAndPushFile({
       repoId,
       repoPath: body.path,
@@ -75,6 +79,7 @@ export async function PUT(request: Request, context: { params: Promise<{ repoId:
       defaultBranch: repository.default_branch,
     });
     await scanRepository(repoId);
+    await refreshRepositoryStatus(repoId);
 
     return jsonOk({ result });
   } catch (error) {

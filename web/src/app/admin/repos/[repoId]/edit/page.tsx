@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { MarkdownEditor } from '@/components/admin/markdown-editor';
 import { isAdminSession } from '@/lib/server/auth';
-import { listDocuments, readDocumentFile } from '@/lib/server/repositories';
+import { getDocument, listDocuments, readDocumentFile } from '@/lib/server/repositories';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,7 +15,7 @@ export default async function EditPage(props: {
 
   const { repoId } = await props.params;
   const searchParams = await props.searchParams;
-  const docs = listDocuments(repoId);
+  const docs = listDocuments(repoId).filter((document) => document.origin === 'git');
 
   if (!searchParams.path) {
     return (
@@ -28,7 +28,7 @@ export default async function EditPage(props: {
         </div>
         <div className="divide-y rounded-md border">
           {docs.length === 0 ? (
-            <p className="p-4 text-sm text-fd-muted-foreground">No Markdown files are indexed.</p>
+            <p className="p-4 text-sm text-fd-muted-foreground">No Git-tracked Markdown files are available to edit.</p>
           ) : (
             docs.map((doc) => (
               <Link key={doc.path} className="block p-3 hover:bg-fd-accent" href={`/admin/repos/${encodeURIComponent(repoId)}/edit?path=${encodeURIComponent(doc.path)}`}>
@@ -44,6 +44,7 @@ export default async function EditPage(props: {
 
   const file = await readDocumentFile(repoId, searchParams.path).catch(() => undefined);
   if (!file) notFound();
+  if (getDocument(repoId, file.path)?.origin === 'local') notFound();
 
   return (
     <MarkdownEditor

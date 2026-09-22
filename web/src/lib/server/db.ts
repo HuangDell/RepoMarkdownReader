@@ -5,7 +5,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { appConfig } from './config';
 
 let db: DatabaseSync | undefined;
-const latestSchemaVersion = 1;
+const latestSchemaVersion = 2;
 
 export type SqlValue = string | number | bigint | null | Uint8Array;
 
@@ -114,6 +114,28 @@ function migrate(database: DatabaseSync) {
     database.exec(`
       DROP INDEX IF EXISTS idx_notes_target;
       DROP TABLE IF EXISTS notes;
+      PRAGMA user_version = 1;
+    `);
+  }
+
+  if (version < 2) {
+    const documentColumns = new Set(
+      (database.prepare('PRAGMA table_info(documents)').all() as Array<{ name: string }>).map((column) => column.name),
+    );
+    if (!documentColumns.has('origin')) {
+      database.exec("ALTER TABLE documents ADD COLUMN origin TEXT NOT NULL DEFAULT 'git';");
+    }
+
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS local_folders (
+        repo_id TEXT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+        path TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (repo_id, path)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_local_folders_repo_path ON local_folders(repo_id, path);
       PRAGMA user_version = ${latestSchemaVersion};
     `);
   }

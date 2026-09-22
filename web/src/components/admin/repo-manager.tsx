@@ -137,7 +137,9 @@ export function RepoManager({ initialRepositories, hasGithubToken }: RepoManager
                 <p className="truncate text-xs text-fd-muted-foreground">{repo.url}</p>
                 {repo.last_error ? <p className="mt-1 text-xs text-red-600 dark:text-red-300">{repo.last_error}</p> : null}
               </div>
-              <span className="hidden text-xs md:block">{repo.status}</span>
+              <span className="hidden text-xs md:block">
+                {repo.status === 'local_changes' ? 'Local changes pending' : repo.status}
+              </span>
               <span className="hidden text-xs text-fd-muted-foreground md:block">
                 {repo.last_sync_at ? new Date(repo.last_sync_at).toLocaleString() : 'Never'}
               </span>

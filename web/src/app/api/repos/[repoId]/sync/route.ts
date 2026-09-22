@@ -12,6 +12,7 @@ export async function POST(_request: Request, context: { params: Promise<{ repoI
     const repository = await syncRepository(repoId);
     return jsonOk({ repository });
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : 'Failed to sync repository.');
+    const isLocalChanges = error instanceof Error && error.name === 'LocalChangesError';
+    return jsonError(error instanceof Error ? error.message : 'Failed to sync repository.', isLocalChanges ? 409 : 400);
   }
 }

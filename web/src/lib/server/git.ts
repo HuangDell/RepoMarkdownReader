@@ -105,6 +105,17 @@ export async function getHeadCommit(worktree: string) {
   return result.stdout;
 }
 
+export async function getHeadTrackedPaths(worktree: string) {
+  const result = await runGit(['ls-tree', '-r', '--name-only', 'HEAD'], worktree);
+  return new Set(result.stdout.split('\n').filter(Boolean));
+}
+
+export async function getWorktreeStatus(repoId: string) {
+  const worktree = getRepoWorktreePath(repoId);
+  const result = await runGit(['status', '--porcelain=v1', '--untracked-files=all'], worktree);
+  return result.stdout.split('\n').filter(Boolean);
+}
+
 export async function getFileLastModifiedAt(worktree: string, repoPath: string) {
   const normalized = normalizeRepoPath(repoPath);
   const result = await runGit(['log', '-1', '--follow', '--format=%cI', '--', normalized], worktree);

@@ -108,18 +108,24 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
         <span aria-hidden="true">·</span>
         <DocumentLastModified value={file.lastModifiedAt} />
       </div>
-      <div className="not-prose mt-4 flex flex-wrap gap-2 border-b pb-6 text-sm">
-        <Link href={`/admin/repos/${encodeURIComponent(repoId)}/edit?path=${encodeURIComponent(repoPath)}`} className="rounded-md border px-3 py-2 hover:bg-fd-accent">
-          Edit
-        </Link>
-        <a
-          href={`https://github.com/${repo.owner}/${repo.name}/blob/${repo.default_branch}/${repoPath.split('/').map(encodeURIComponent).join('/')}`}
-          className="rounded-md border px-3 py-2 hover:bg-fd-accent"
-          target="_blank"
-          rel="noreferrer"
-        >
-          GitHub
-        </a>
+      <div className="not-prose mt-4 flex flex-wrap items-center gap-2 border-b pb-6 text-sm">
+        {document.origin === 'local' ? (
+          <span className="rounded-md border border-fd-primary/40 bg-fd-primary/10 px-3 py-2 text-fd-primary">Local file · new</span>
+        ) : (
+          <>
+            <Link href={`/admin/repos/${encodeURIComponent(repoId)}/edit?path=${encodeURIComponent(repoPath)}`} className="rounded-md border px-3 py-2 hover:bg-fd-accent">
+              Edit
+            </Link>
+            <a
+              href={`https://github.com/${repo.owner}/${repo.name}/blob/${repo.default_branch}/${repoPath.split('/').map(encodeURIComponent).join('/')}`}
+              className="rounded-md border px-3 py-2 hover:bg-fd-accent"
+              target="_blank"
+              rel="noreferrer"
+            >
+              GitHub
+            </a>
+          </>
+        )}
       </div>
       <DocsBody>
         <div dangerouslySetInnerHTML={{ __html: rendered.html }} />
