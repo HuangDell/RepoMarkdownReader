@@ -111,191 +111,107 @@ html > body[data-scroll-locked] {
   content: none !important;
 }
 
-#nd-sidebar [data-radix-collapsible-content] a {
-  min-height: 1.75rem;
-  border-radius: 0.375rem;
-  padding-block: 0.25rem;
-  font-size: 0.8125rem;
-  line-height: 1.25rem;
-}
-
-#nd-sidebar [data-radix-collapsible-content] a:hover {
-  background-color: var(--color-fd-accent);
-  color: var(--reader-sidebar-item-color);
-}
-
-#nd-sidebar .reader-sidebar-folder-row {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-#nd-sidebar .reader-sidebar-folder-controls {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 0.125rem;
-}
-
-#nd-sidebar .reader-sidebar-folder-selected {
-  background-color: color-mix(in srgb, var(--color-fd-accent) 70%, transparent);
-}
-
-#nd-sidebar .reader-sidebar-folder-trigger,
-#nd-sidebar .reader-sidebar-folder-link {
-  position: relative;
-  display: flex;
-  min-width: 0;
-  min-height: 1.75rem;
-  flex: 1 1 auto;
-  align-items: center;
-  gap: 0.5rem;
-  border-radius: 0.375rem;
-  padding: 0.25rem 0.5rem;
-  text-align: start;
-  font-size: 0.8125rem;
-  line-height: 1.25rem;
-  transition: background-color 120ms ease, color 120ms ease;
-}
-
-#nd-sidebar .reader-sidebar-folder-trigger:hover,
-#nd-sidebar .reader-sidebar-folder-link:hover {
-  background-color: var(--color-fd-accent);
-}
-
-#nd-sidebar .reader-sidebar-folder-trigger:focus-visible,
-#nd-sidebar .reader-sidebar-folder-link:focus-visible,
-#nd-sidebar a:focus-visible {
-  outline: 2px solid var(--color-fd-ring);
-  outline-offset: -2px;
-}
-
-#nd-sidebar .reader-sidebar-folder-inline-input {
-  min-width: 0;
-  width: 100%;
-  border: 1px solid var(--color-fd-border);
-  border-radius: 0.375rem;
-  background: var(--color-fd-background);
-  padding: 0.25rem 0.5rem;
-  color: var(--reader-sidebar-item-color);
-  font-size: 0.8125rem;
-  line-height: 1.25rem;
-  outline: none;
-}
-
-#nd-sidebar .reader-sidebar-folder-inline-input:focus {
-  border-color: var(--color-fd-primary);
-  box-shadow: 0 0 0 1px var(--color-fd-primary);
-}
-
-#nd-sidebar .reader-sidebar-folder-pending-row {
-  display: flex;
-  min-width: 0;
-  min-height: 1.75rem;
-  align-items: center;
-  gap: 0.5rem;
-  border-radius: 0.375rem;
-  padding: 0.25rem 0.5rem;
-}
-
-#nd-sidebar .reader-sidebar-folder-pending-chevron {
-  display: inline-flex;
-  width: 1rem;
-  height: 1rem;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-fd-muted-foreground);
-}
-
-#nd-sidebar .reader-sidebar-folder-pending-row .reader-sidebar-folder-inline-input {
-  flex: 1 1 auto;
-  width: auto;
-}
-
-#nd-sidebar .reader-sidebar-folder-editing {
-  cursor: text;
-}
-
-#nd-sidebar .reader-sidebar-folder-icon,
-#nd-sidebar .reader-sidebar-folder-trigger > [data-icon],
-#nd-sidebar .reader-sidebar-folder-link > [data-icon] {
-  flex: 0 0 auto;
-}
-
-/* Base folder controls append the chevron after the label. Move it before the
- * icon so every tree row uses the same left-to-right hierarchy. */
-#nd-sidebar .reader-sidebar-folder-trigger > [data-icon],
-#nd-sidebar .reader-sidebar-folder-link > [data-icon] {
-  order: -1;
-  margin-inline: 0;
-  transition: rotate 120ms ease;
-}
-
-#nd-sidebar [data-state='closed'] > .reader-sidebar-folder-row .reader-sidebar-folder-trigger > [data-icon],
-#nd-sidebar [data-state='closed'] > .reader-sidebar-folder-row .reader-sidebar-folder-link > [data-icon] {
-  rotate: -90deg;
-}
-
-#nd-sidebar [data-state='open'] > .reader-sidebar-folder-row .reader-sidebar-folder-trigger > [data-icon],
-#nd-sidebar [data-state='open'] > .reader-sidebar-folder-row .reader-sidebar-folder-link > [data-icon] {
-  rotate: 0deg;
-}
-
-#nd-sidebar .reader-sidebar-folder-icon {
-  display: inline-flex;
-  width: 1rem;
-  height: 1rem;
-  align-items: center;
-  justify-content: center;
-  color: var(--reader-sidebar-item-color);
-}
-
-#nd-sidebar .reader-sidebar-folder-icon > svg {
-  width: 1rem;
-  height: 1rem;
-  flex: 0 0 auto;
-}
-
-#nd-sidebar .reader-sidebar-folder-glyph {
+.reader-explorer-shell .reader-sidebar-folder-glyph {
   color: #4f8f68;
 }
 
-#nd-sidebar .reader-sidebar-file-glyph {
+.reader-explorer-shell .reader-sidebar-file-glyph {
   color: #3b82b6;
 }
 
-.dark #nd-sidebar .reader-sidebar-folder-glyph {
+.dark .reader-explorer-shell .reader-sidebar-folder-glyph {
   color: #79c995;
 }
 
-.dark #nd-sidebar .reader-sidebar-file-glyph {
+.dark .reader-explorer-shell .reader-sidebar-file-glyph {
   color: #72b7e6;
-}
-
-/* The nested content still gets a subtle guide, but it is kept in the
- * indentation gutter and never overlaps a filename. */
-#nd-sidebar .reader-sidebar-folder-content {
-  margin-inline-start: 0.75rem;
-  padding-inline-start: 0.75rem;
-}
-
-#nd-sidebar [data-state='open'] > [data-radix-collapsible-content] {
-  position: relative;
-}
-
-#nd-sidebar [data-state='open'] > [data-radix-collapsible-content]::before {
-  position: absolute;
-  inset-block: 0.25rem;
-  inset-inline-start: 0.625rem;
-  width: 1px;
-  background: var(--color-fd-border);
-  content: '';
 }
 
 .prose :where(h1, h2, h3, h4, h5, h6)[id] {
   scroll-margin-top: 6rem;
+}
+
+.reader-explorer-shell {
+  --reader-sidebar-item-color: var(--color-fd-foreground);
+  --reader-sidebar-active-background: var(--color-fd-accent);
+}
+
+.reader-explorer {
+  min-height: 12rem;
+}
+
+.reader-explorer-heading,
+.reader-explorer-row,
+.reader-explorer-controls,
+.reader-explorer-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.reader-explorer-heading,
+.reader-explorer-item {
+  min-height: 1.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  text-align: start;
+}
+
+.reader-explorer-item > svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.reader-explorer-controls {
+  flex-shrink: 0;
+  gap: 0.125rem;
+}
+
+.reader-explorer-controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.375rem;
+}
+
+.reader-explorer-controls svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.reader-explorer-item:hover,
+.reader-explorer-item[data-active='true'],
+.reader-explorer-controls button:hover {
+  background: var(--color-fd-accent);
+}
+
+.reader-explorer [data-dragging='true'],
+.reader-explorer[data-dragging='true'] {
+  background: color-mix(in srgb, var(--color-fd-primary) 10%, transparent);
+  outline: 1px solid var(--color-fd-primary);
+}
+
+.reader-explorer button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.reader-explorer :is(button, a):focus-visible {
+  outline: 2px solid var(--color-fd-ring);
+  outline-offset: -2px;
+}
+
+.reader-explorer .reader-sidebar-folder-inline-input {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.5rem;
 }
 
 .prose .reader-math-scroll {

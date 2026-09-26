@@ -47,6 +47,8 @@ npx playwright install-deps chromium webkit
 
 Browser binaries are stored in Playwright's local cache and are not committed to git. For mobile reader checks, use a 390 × 844 viewport and verify that wide Markdown tables scroll horizontally inside their own container without widening the page.
 
+Run `npm run build` followed by `npm run test:explorer` from `web/` for Explorer regression checks. The suite starts a production server on port 3197 and creates isolated repositories and a database in a temporary directory; it does not use your configured repository data. Failed runs retain browser traces in `web/test-results/`.
+
 ## Markdown Rendering Compatibility
 
 Math rendering accepts standard `$...$` and `$$...$$` delimiters, plus ChatGPT-style `\(...\)` and `\[...\]` delimiters. A standalone `[` / `]` block is also treated as display math when its body contains TeX-like operators. Inside these compatibility blocks, a line made of three or more equals signs is normalized to one `=`. Delimiter normalization skips code blocks, inline code, links, images, raw HTML, and formulas that already use standard delimiters.

@@ -577,9 +577,16 @@ function addFolderPath(repoFolder: MutableFolder, repoId: string, folderPath: st
 export function buildPageTree(): PageTree.Root {
   const repos = listRepositories();
   const children: PageTree.Node[] = [];
+  const revision = crypto.createHash('sha256');
 
   for (const repo of repos) {
     const documents = listDocuments(repo.id);
+    const localFolders = listLocalFolders(repo.id);
+    revision.update(JSON.stringify([
+      repo.id, repo.owner, repo.name,
+      documents.map((document) => [document.path, document.origin]),
+      localFolders.map((folder) => folder.path),
+    ]));
     const repoFolder: MutableFolder = {
       type: 'folder',
       name: `${repo.owner}/${repo.name}`,
@@ -591,7 +598,7 @@ export function buildPageTree(): PageTree.Root {
       children: [],
     };
 
-    for (const folder of listLocalFolders(repo.id)) {
+    for (const folder of localFolders) {
       addFolderPath(repoFolder, repo.id, folder.path);
     }
 
@@ -628,6 +635,7 @@ export function buildPageTree(): PageTree.Root {
 
       const fileName = segments.at(-1)?.toLowerCase();
       if (fileName === 'readme.md' || fileName === 'index.md') {
+        if (current.index) current.children.push(current.index);
         current.index = item;
       } else {
         current.children.push(item);
@@ -640,6 +648,8 @@ export function buildPageTree(): PageTree.Root {
 
   return {
     type: 'root',
+    // Fumadocs memoizes tree data by $id, including across router.refresh().
+    $id: revision.digest('hex'),
     name: appName,
     children,
   };

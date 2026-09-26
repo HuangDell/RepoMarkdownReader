@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "test:explorer": "playwright test",
     "build": "NEXT_TELEMETRY_DISABLED=1 next build",
     "build:wasm": "NEXT_TELEMETRY_DISABLED=1 NEXT_TEST_WASM=1 next build --webpack",
     "dev": "NEXT_TELEMETRY_DISABLED=1 next dev",
