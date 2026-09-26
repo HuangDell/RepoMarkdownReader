@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "test:explorer": "playwright test",
+    "types:check:tests": "tsc --project tsconfig.test.json --noEmit",
     "build": "NEXT_TELEMETRY_DISABLED=1 next build",
     "build:wasm": "NEXT_TELEMETRY_DISABLED=1 NEXT_TEST_WASM=1 next build --webpack",
     "dev": "NEXT_TELEMETRY_DISABLED=1 next dev",

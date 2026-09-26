@@ -33,6 +33,8 @@ npm run types:check
 
 ## Browser Layout Verification
 
+Application type checking excludes `playwright.config.ts` and `tests/` so production builds do not depend on Playwright. Run `npm run types:check:tests` separately to type-check the browser tests with development dependencies installed.
+
 Playwright is kept as a development dependency for manual Chromium and WebKit checks. Install the browser binaries once from `web/`:
 
 ```bash
@@ -56,6 +58,16 @@ Math rendering accepts standard `$...$` and `$$...$$` delimiters, plus ChatGPT-s
 Wide display formulas, long inline formulas, Markdown tables, and fenced code blocks scroll inside their own content area instead of widening the page.
 
 ## Runtime Configuration
+
+When building on the deployment machine, install build dependencies before building:
+
+```bash
+npm ci --include=dev
+npm run build
+npm run start
+```
+
+Build tools such as TypeScript and Tailwind are development dependencies, even though they are needed to produce a production build. Playwright browser binaries are only needed to run browser tests, not to build or start the app.
 
 Copy `web/.env.example` to a local environment file and set:
 
