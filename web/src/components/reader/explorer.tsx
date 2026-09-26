@@ -130,6 +130,7 @@ export function ReaderSidebar({ banner, footer, collapsible = true }: SidebarPro
       },
       onDrop(event: DragEvent) {
         event.preventDefault();
+        // A folder row owns its drop; never also upload to the current directory.
         event.stopPropagation();
         setDragPath(null);
         void upload(target, Array.from(event.dataTransfer.files));
@@ -155,9 +156,9 @@ export function ReaderSidebar({ banner, footer, collapsible = true }: SidebarPro
       {slots.searchTrigger && <slots.searchTrigger.full hideIfDisabled />}
       {banner}
     </div>
-    <SidebarViewport>
+    <SidebarViewport viewport={{ className: 'reader-explorer-viewport', ...(folder ? dropHandlers(folder) : {}) }}>
       {menuItems.filter((item) => item.type !== 'icon' && 'url' in item).map((item, index) => 'url' in item && item.url && <Link key={index} href={item.url} className="p-2">{item.icon}{item.text}</Link>)}
-      <nav aria-label="Explorer" className="reader-explorer" {...(folder ? dropHandlers(folder) : {})}>
+      <nav aria-label="Explorer" className="reader-explorer">
         <div className="reader-explorer-heading">
           {location && <button type="button" disabled={busy || !!edit} onClick={() => navigate(parentLocation(location))} aria-label="Back to parent directory" title="返回上一级"><ArrowLeft className="size-4" /></button>}
           <span className="min-w-0 flex-1 truncate font-medium">{folder ? folder.name : 'Repositories'}</span>

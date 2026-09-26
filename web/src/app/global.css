@@ -191,7 +191,7 @@ html > body[data-scroll-locked] {
 }
 
 .reader-explorer [data-dragging='true'],
-.reader-explorer[data-dragging='true'] {
+.reader-explorer-viewport[data-dragging='true'] {
   background: color-mix(in srgb, var(--color-fd-primary) 10%, transparent);
   outline: 1px solid var(--color-fd-primary);
 }
