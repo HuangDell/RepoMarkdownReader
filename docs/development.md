@@ -53,6 +53,23 @@ Run `npm run build` followed by `npm run test:explorer` from `web/` for Explorer
 
 ## Markdown Rendering Compatibility
 
+Repository documents and editor previews support safe HTML, including native `<details>` / `<summary>` disclosure blocks. Blocks are collapsed by default; use `<details open>` to start expanded. Nested blocks are supported. Leave blank lines around Markdown inside HTML blocks:
+
+````markdown
+<details>
+<summary>Show the explanation</summary>
+
+Markdown **formatting**, lists, and formulas such as $a^2 + b^2 = c^2$ work here.
+
+```python
+print("Hello")
+```
+
+</details>
+````
+
+Source HTML uses the sanitizer's safe tag whitelist. Scripts, event handlers, unsafe URLs, arbitrary classes, and inline styles are filtered before math and syntax highlighting generate their own markup. HTML IDs receive a `user-content-` prefix and local fragment links are adjusted to match. Raw HTML headings are not added to the Markdown table of contents. Expansion state is not persisted.
+
 Math rendering accepts standard `$...$` and `$$...$$` delimiters, plus ChatGPT-style `\(...\)` and `\[...\]` delimiters. A standalone `[` / `]` block is also treated as display math when its body contains TeX-like operators. Inside these compatibility blocks, a line made of three or more equals signs is normalized to one `=`. Delimiter normalization skips code blocks, inline code, links, images, raw HTML, and formulas that already use standard delimiters.
 
 Wide display formulas, long inline formulas, Markdown tables, and fenced code blocks scroll inside their own content area instead of widening the page.

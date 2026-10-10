@@ -4,6 +4,7 @@ import { rehypeCode } from 'fumadocs-core/mdx-plugins/rehype-code';
 import matter from 'gray-matter';
 import katex from 'katex';
 import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import rehypeStringify from 'rehype-stringify';
 import remarkGfm from 'remark-gfm';
@@ -206,18 +207,41 @@ export function extractMarkdownMetadata(repoPath: string, raw: string): Markdown
   };
 }
 
-function rehypeHeadingIds(headings: MarkdownHeading[]) {
+function rehypeHeadingIds(headings: MarkdownHeading[], content: string) {
+  // Match source positions so raw HTML headings cannot consume Markdown IDs.
+  const anchors = new Map<number, string>();
   let index = 0;
+  const markdown = unified().use(remarkParse).parse(content) as TreeNode;
+  visit(markdown, 'heading', (node: TreeNode) => {
+    if (!textContent(node).trim()) return;
+    const heading = headings[index++];
+    const offset = node.position?.start.offset;
+    if (heading && offset !== undefined) anchors.set(offset, heading.anchor);
+  });
 
   return () => (tree: TreeNode) => {
     visit(tree, 'element', (node: TreeNode) => {
       if (!/^h[1-6]$/.test(node.tagName ?? '')) return;
 
-      const heading = headings[index];
-      index += 1;
+      const offset = node.position?.start.offset;
+      const anchor = offset === undefined ? undefined : anchors.get(offset);
+      if (anchor) node.properties = { ...node.properties, id: anchor };
+    });
+  };
+}
 
-      if (!heading) return;
-      node.properties = { ...node.properties, id: heading.anchor };
+function rehypeSanitizedFragmentLinks() {
+  return (tree: TreeNode) => {
+    const ids = new Set<string>();
+    visit(tree, 'element', (node: TreeNode) => {
+      if (typeof node.properties?.id === 'string') ids.add(node.properties.id);
+    });
+    visit(tree, 'element', (node: TreeNode) => {
+      const href = node.properties?.href;
+      if (node.tagName !== 'a' || typeof href !== 'string' || !href.startsWith('#')) return;
+      const id = `${defaultSchema.clobberPrefix}${href.slice(1)}`;
+      // Keep HTML anchors and GFM footnotes working after ID sanitization.
+      if (ids.has(id)) node.properties!.href = `#${id}`;
     });
   };
 }
@@ -324,6 +348,16 @@ function rehypeEnhanceOverflowContent() {
   };
 }
 
+// Sanitize untrusted HTML before plugins generate their own styles and SVG.
+const sourceHtmlSchema: Schema = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    details: [...(defaultSchema.attributes?.details ?? []), 'open'],
+    code: [['className', /^language-./, 'math-inline', 'math-display']],
+  },
+};
+
 const sanitizeSchema: Schema = {
   ...defaultSchema,
   clobberPrefix: '',
@@ -383,8 +417,11 @@ export async function renderMarkdown(repoId: string, repoPath: string, raw: stri
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkMath)
-    .use(remarkRehype)
-    .use(rehypeHeadingIds(metadata.headings))
+    .use(remarkRehype, { allowDangerousHtml: true })
+    .use(rehypeRaw)
+    .use(rehypeSanitize, sourceHtmlSchema)
+    .use(rehypeSanitizedFragmentLinks)
+    .use(rehypeHeadingIds(metadata.headings, content))
     .use(rehypeRewriteLinks(repoId, repoPath))
     .use(rehypeKatex)
     .use(rehypeCode, {
@@ -396,7 +433,8 @@ export async function renderMarkdown(repoId: string, repoPath: string, raw: stri
       tab: false,
     })
     .use(rehypeEnhanceOverflowContent)
-    .use(rehypeSanitize, sanitizeSchema)
+    // Use a distinct plugin: unified merges repeated uses of the same plugin.
+    .use(() => rehypeSanitize(sanitizeSchema))
     .use(rehypeStringify)
     .process(content);
 
